@@ -1,0 +1,25 @@
+{
+  "name": "allex_bootstrapwebcomponent",
+  "version": "1.0.0",
+  "description": "AllexJS bootstrap JS logic",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/allex-web-components/bootstrap.git"
+  },
+  "keywords": [
+    "ecosystem:AllexJS",
+    "bootstrap",
+    "web",
+    "component"
+  ],
+  "author": "Andrija Petrovic <andrija.hers@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/allex-web-components/bootstrap/issues"
+  },
+  "homepage": "https://github.com/allex-web-components/bootstrap#readme"
+}

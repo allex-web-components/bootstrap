@@ -1,0 +1,15 @@
+{
+  "browserify": {
+    "dist/browserified.js": "index.js"
+  },
+  "dependencies": {
+    "js": [
+      "allex:app:lib",
+      "allex:jqueryelements:lib",
+      "node_modules/bootstrap/dist/js/bootstrap.min.js"
+    ],
+    "css": [
+      "node_modules/bootstrap/dist/css/bootstrap.min.css"
+    ]
+  }
+}
