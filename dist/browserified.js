@@ -31,6 +31,9 @@ function createModalElement (lib, applib) {
     this.$element.modal('hide');
   };
   BSModalDiv.prototype.hookToBSModal = function () {
+    if (!this.$element.hasClass('modal')) {
+      this.$element.addClass('modal');
+    }
     this.$element.on('shown.bs.modal', this.onShownBsModal.bind(this));
     this.$element.on('hidden.bs.modal', this.onHiddenBsModal.bind(this));
   };
