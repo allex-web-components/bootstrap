@@ -1,12 +1,37 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+function createDataModalElement (lib, applib) {
+  'use strict';
+
+  var BSModalDivElement = applib.getElementType('BSModalDivElement');
+
+  function BSDataModalDiv (id, options) {
+    BSModalDivElement.call(this, id, options);
+    this.data = null;
+  }
+  lib.inherit(BSDataModalDiv, BSModalDivElement);
+  BSDataModalDiv.prototype.onShownBsModal = function (ev) {
+    var evdata;
+    BSModalDivElement.prototype.onShownBsModal.call(this, ev); //ev is ignored in this call;
+    evdata = jQuery(ev.relatedTarget).data(this.getConfigVal('bsdatapropertyname')||'data');
+    if (lib.defined(evdata)) {
+      this.set('data', evdata);
+    }
+  };
+
+  applib.registerElementType('BSDataModalDivElement', BSDataModalDiv);
+}
+module.exports = createDataModalElement;
+
+},{}],2:[function(require,module,exports){
 function createElements (lib, applib) {
   'use strict';
 
   require('./modalcreator')(lib, applib);
+  require('./datamodalcreator')(lib, applib);
 }
 module.exports = createElements;
 
-},{"./modalcreator":2}],2:[function(require,module,exports){
+},{"./datamodalcreator":1,"./modalcreator":3}],3:[function(require,module,exports){
 function createModalElement (lib, applib) {
   'use strict';
 
@@ -62,7 +87,7 @@ function createModalElement (lib, applib) {
 }
 module.exports = createModalElement;
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 (function (execlib) {
   var lib = execlib.lib,
     lR = execlib.execSuite.libRegistry,
@@ -71,4 +96,4 @@ module.exports = createModalElement;
   require('./elements')(lib, applib);
 })(ALLEX)
 
-},{"./elements":1}]},{},[3]);
+},{"./elements":2}]},{},[4]);
