@@ -3,28 +3,66 @@ function createModalElement (lib, applib) {
 
   var DivElement = applib.getElementType('DivElement');
 
+  function findinoptions (options, name, dflt) {
+    if (!options) {
+      return dflt;
+    }
+    if ('modal_'+name in options) {
+      return options['modal_'+name];
+    }
+    if (options.modal) {
+      if (name in options.modal) {
+        return options.modal[name];
+      }
+    }
+    return dflt;
+  }
+
   function BSModalDiv (id, options) {
     DivElement.call(this, id, options);
-    this.modal_backdrop = options ? (options.modal_backdrop || true) : true;
-    this.modal_keyboard = options ? (options.modal_keyboard || true) : true;
-    this.modal_show = options ? (options.modal_show || true) : true;
+    this.modalInstance;
+    this.modal_backdrop = findinoptions(options, 'backdrop', true);
+    this.modal_keyboard = findinoptions(options, 'keyboard', true);
+    this.modal_show = findinoptions(options, 'show', true);
   }
   lib.inherit(BSModalDiv, DivElement);
+  BSModalDiv.prototype.__cleanUp = function () {
+    this.modal_show = null;
+    this.modal_keyboard = null;
+    this.modal_backdrop = null;
+    this.modalInstance = null;
+    DivElement.prototype.__cleanUp.call(this);
+  };
   BSModalDiv.prototype.showElement = function () {
+    if (!this.modalInstance) {
+      return;
+    }
+		/*
     this.$element.modal({
       backdrop: this.modal_backdrop,
       keyboard: this.modal_keyboard,
       show: this.modal_show
     });
-    return 
+		*/
+    this.modalInstance.show();
+    return; 
   };
   BSModalDiv.prototype.hideElement = function () {
-    this.$element.modal('hide');
+    //this.$element.modal('hide');
+    if (!this.modalInstance) {
+      return;
+    }
+    this.modalInstance.hide();
   };
   BSModalDiv.prototype.hookToBSModal = function () {
     if (!this.$element.hasClass('modal')) {
       this.$element.addClass('modal');
     }
+    this.modalInstance = new bootstrap.Modal(this.$element, {
+      backdrop: this.modal_backdrop,
+      keyboard: this.modal_keyboard,
+      show: this.modal_show
+    });
     this.$element.on('shown.bs.modal', this.onShownBsModal.bind(this));
     this.$element.on('hidden.bs.modal', this.onHiddenBsModal.bind(this));
   };
@@ -36,7 +74,7 @@ function createModalElement (lib, applib) {
     lib.runNext(this.fixZIndex.bind(this, zindex));
     zindex = null;
   };
-  BSModalDiv.prototype.onHiddenBsModal = function () {
+  BSModalDiv.prototype.onHiddenBsModal = function (ev) {
     this.set('actual', false);
     if (jQuery('.modal:visible').length) {
       jQuery(document.body).addClass('modal-open');

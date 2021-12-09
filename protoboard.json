@@ -6,7 +6,9 @@
     "js": [
       "allex:app:lib",
       "allex:jqueryelements:lib",
-      "node_modules/bootstrap/dist/js/bootstrap.min.js"
+      "allex:templateslite:lib",
+      "allex:htmltemplates:lib",
+      "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"
     ],
     "css": [
       "node_modules/bootstrap/dist/css/bootstrap.min.css"
