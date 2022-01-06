@@ -1,4 +1,74 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+function createCustomSelect (execlib, applib, mylib) {
+  'use strict';
+
+  var lib = execlib.lib,
+    TextInputWithListElement = applib.getElementType('TextInputWithList');
+  
+  function CustomSelectElement (id, options) {
+    TextInputWithListElement.call(this, id, options);
+    this.options = null;
+    this.selectedValue = null;
+  }
+  lib.inherit(CustomSelectElement, TextInputWithListElement);
+  CustomSelectElement.prototype.__cleanUp = function () {
+    this.selectedValue = null;
+    this.options = null;
+    TextInputWithListElement.prototype.__cleanUp.call(this);
+  };
+  CustomSelectElement.prototype.rawItemToText = function (rawitem) {
+    return rawitem ? rawitem[this.getConfigVal('titlepath')] : '';
+  };
+  CustomSelectElement.prototype.rawDataToTextInputValue = function (rawitem) {
+    this.set('selectedValue', rawitem ? rawitem[this.getConfigVal('valuepath')] : '');
+    return this.rawItemToText(rawitem);
+  };
+
+  CustomSelectElement.prototype.set_options = function (options) {
+    this.options = options;
+    this.fillList(options);
+    return true;
+  };
+  CustomSelectElement.prototype.set_selectedValue = function (selval) {
+    this.selectedValue = selval;
+    this.$element.val('');
+    this.list.find('li').each(this.optionForSelectChecker.bind(this, {found: false}));
+    return true;
+  };
+  CustomSelectElement.prototype.optionForSelectChecker = function (foundobj, index, li) {
+    var data;
+    if (foundobj.found) {
+      return;
+    }
+    try {
+      data = JSON.parse(li.getAttribute('data'));
+      if (!data) {
+        return;
+      }
+      if (lib.isEqual(data[this.getConfigVal('valuepath')], this.selectedValue)) {
+        this.chooseItem({
+          target: li
+        });
+        foundobj.found = true;
+      }
+    } catch(e) {
+      console.error(e);
+    }
+  };
+
+  CustomSelectElement.prototype.prepareCustomSelect = function () {
+    this.$element.on('show.bs.dropdown', this.onDropDownShow.bind(this));
+  };
+  CustomSelectElement.prototype.onDropDownShow = function (evntignored) {
+    this.listContainer.width(this.$element.outerWidth());
+  };
+
+  CustomSelectElement.prototype.postInitializationMethodNames = CustomSelectElement.prototype.postInitializationMethodNames.concat(['prepareCustomSelect']);
+
+  applib.registerElementType('CustomSelect', CustomSelectElement);
+}
+module.exports = createCustomSelect;
+},{}],2:[function(require,module,exports){
 function createDataModalElement (lib, applib) {
   'use strict';
 
@@ -22,7 +92,7 @@ function createDataModalElement (lib, applib) {
 }
 module.exports = createDataModalElement;
 
-},{}],2:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 function createElements (execlib, applib, mylib) {
   'use strict';
 
@@ -31,10 +101,13 @@ function createElements (execlib, applib, mylib) {
 	require('./modalformcreator')(execlib, applib);
 	require('./popupcreator')(execlib, applib, mylib);
 	require('./questioncreator')(execlib, applib, mylib);
+	require('./textinputwithlistcreator')(execlib, applib, mylib);
+	require('./serverlookupcreator')(execlib, applib, mylib);
+	require('./customselectcreator')(execlib, applib, mylib);
 }
 module.exports = createElements;
 
-},{"./datamodalcreator":1,"./modalcreator":3,"./modalformcreator":4,"./popupcreator":5,"./questioncreator":6}],3:[function(require,module,exports){
+},{"./customselectcreator":1,"./datamodalcreator":2,"./modalcreator":4,"./modalformcreator":5,"./popupcreator":6,"./questioncreator":7,"./serverlookupcreator":8,"./textinputwithlistcreator":9}],4:[function(require,module,exports){
 function createModalElement (lib, applib) {
   'use strict';
 
@@ -142,7 +215,7 @@ function createModalElement (lib, applib) {
 }
 module.exports = createModalElement;
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 function createModalFormElement (execlib, applib) {
   'use strict';
 
@@ -166,7 +239,7 @@ function createModalFormElement (execlib, applib) {
 }
 module.exports = createModalFormElement;
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 function createPopups(execlib, applib, mylib) {
   'use strict';
   var lib = execlib.lib,
@@ -308,7 +381,7 @@ function createPopups(execlib, applib, mylib) {
   applib.registerElementType('PopUpWithWidget', PopUpWithWidgetElement);
 }
 module.exports = createPopups;
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 function createQuestion(execlib, applib, mylib) {
   'use strict';
 
@@ -419,7 +492,229 @@ function createQuestion(execlib, applib, mylib) {
   applib.registerElementType('Question', QuestionElement);
 }
 module.exports = createQuestion;
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
+function createServerLookup (execlib, applib, mylib) {
+  'use strict';
+
+  var lib = execlib.lib,
+    TextInputWithListElement = applib.getElementType('TextInputWithList');
+  
+  function ServerLookupElement (id, options) {
+    if (!(options && options.environmentname)) {
+      throw new lib.Error('NO_ENVIRONMENTNAME', 'Options for '+this.constructor.name+' must specify the "environmentname"');
+    }
+    TextInputWithListElement.call(this, id, options);
+    this.needLookup = this.createBufferableHookCollection();
+    this.chosenProposal = null;
+  }
+  lib.inherit(ServerLookupElement, TextInputWithListElement);
+  ServerLookupElement.prototype.__cleanUp = function () {
+    this.chosenProposal = null;
+    if (this.needLookup) {
+      this.needLookup.destroy();
+    }
+    this.needLookup = null;
+    TextInputWithListElement.prototype.__cleanUp.call(this);
+  };
+  ServerLookupElement.prototype.fillList = function (rawitems) {
+    TextInputWithListElement.prototype.fillList.call(this, rawitems);
+    this.dropdown.show();
+  };
+  ServerLookupElement.prototype.processTextInput = function (val) {
+    if (val) {
+      this.needLookup.fire(val);
+      return;
+    }
+    this.clearList();
+  };
+
+  ServerLookupElement.prototype.createIntegrationEnvironmentDescriptor = function (myname) {
+    var funcname = this.serverLookupFuncName();
+    return {
+      preprocessors: {
+        Command: [{
+          environment: this.getConfigVal('environmentname'),
+          entity: {
+            name: funcname,
+            options: {
+              sink: '.',
+              name: funcname
+            }
+          }
+        }]
+      },
+      logic: [{
+        triggers: 'element.'+myname+'!needLookup',
+        references: '.>'+funcname,
+        handler: this.onReadyToCallServerLookupFunc.bind(this)
+      },{
+        triggers: '.>'+funcname,
+        handler: this.onLookupFunc.bind(this)
+      }]
+    };
+  };
+  ServerLookupElement.prototype.serverLookupFuncName = function () {
+    throw new lib.Error('NOT_IMPLEMENTED', this.constructor.name+' must implement serverLookupFuncName');
+  };
+  ServerLookupElement.prototype.onReadyToCallServerLookupFunc = function (lookupfunc, val) {
+    if (!(lookupfunc && val)) {
+      return;
+    }
+    lookupfunc(this.callArrayForServerLookupFunc(val));
+  };
+  ServerLookupElement.prototype.callArrayForServerLookupFunc = function (valueforlookup) {
+    throw new lib.Error('NOT_IMPLEMENTED', this.constructor.name+' must implement callArrayForServerLookupFunc');
+  };
+  ServerLookupElement.prototype.onLookupFunc = function (func) {
+    if (!(func && !func.running && func.result)) {
+      return;
+    }
+    this.fillList(func.result);
+  };
+
+  applib.registerElementType('ServerLookup', ServerLookupElement);
+}
+module.exports = createServerLookup;
+},{}],9:[function(require,module,exports){
+function createTextInputWithList (execlib, applib, mylib) {
+  'use strict';
+
+  var lib = execlib.lib,
+    lR = execlib.execSuite.libRegistry,
+    applib = lR.get('allex_applib'),
+    formwc = execlib.execSuite.libRegistry.get('allex_formwebcomponent'),
+    DataHolderMixin = formwc.mixins.DataHolder,
+    WebElement = applib.getElementType('WebElement'),
+    bufftriglib = execlib.execSuite.libRegistry.get('allex_bufferedtriggerlib'),
+    BufferedWaiter = bufftriglib.BufferedWaiter,
+    templateslib = lR.get('allex_templateslitelib'),
+    htmltemplateslib = lR.get('allex_htmltemplateslib'),
+    o = templateslib.override,
+    m = htmltemplateslib;
+
+  function createMarkup (options) {
+    return o(m.textinput);
+  }
+
+  function TextInputWithListElement (id, options) {
+    options = options || {};
+    options.default_markup = options.default_markup || createMarkup(options);
+    WebElement.call(this, id, options);
+    DataHolderMixin.call(this, options);
+    this.waiter = new BufferedWaiter(this.processWaiter.bind(this), options.input_timeout||0);
+    this.dropdown = null;
+    this.listContainer = null;
+    this.list = null;
+    this.itemChooser = this.chooseItem.bind(this);
+  }
+  lib.inherit(TextInputWithListElement, WebElement);
+  DataHolderMixin.addMethods(TextInputWithListElement);
+  TextInputWithListElement.prototype.__cleanUp = function () {
+    this.itemChooser = null;
+    this.list = null;
+    this.listContainer = null;
+    if (this.dropdown) {
+      this.dropdown.dispose();
+    }
+    this.dropdown = null;
+    if (this.waiter) {
+      this.waiter.destroy();
+    }
+    this.waiter = null;
+    DataHolderMixin.prototype.destroy.call(this);
+    WebElement.prototype.__cleanUp.call(this);
+  };
+  TextInputWithListElement.prototype.prepareTextInput = function () {
+    this.$element.parent().addClass('dropdown');
+    this.$element.addClass('dropdown-toggle');
+    this.$element.attr('data-bs-toggle', 'dropdown');
+    this.listContainer = jQuery('<div>');
+    this.listContainer.addClass('dropdown-menu');
+    this.listContainer.css({
+      'overflow-y': 'auto',
+      'overflow-x': 'hidden',
+      'max-height': 200
+    });
+    this.list = jQuery('<ul>');
+    this.list.css({
+      margin: 0,
+      'padding-inline-start': 0
+    });
+    this.listContainer.append(this.list);
+    this.listContainer.insertAfter(this.$element);
+    this.dropdown = new bootstrap.Dropdown(this.$element[0], {});
+    this.$element.on('keydown', this.waiter.triggerer);
+  };
+  TextInputWithListElement.prototype.processWaiter = function () {
+    if (!(this.$element && this.$element.length>0 && this.needLookup)){
+      return;
+    }
+    this.processTextInput(this.$element.val());
+  };
+  TextInputWithListElement.prototype.processTextInput = function (val) {};
+
+  TextInputWithListElement.prototype.fillList = function (rawitems) {
+    this.clearList();
+    this.dropdown.hide();
+    (lib.isArray(rawitems) ? rawitems : []).forEach(this.itemAppender.bind(this));
+  };
+  TextInputWithListElement.prototype.itemAppender = function (rawitem) {
+    var li = jQuery('<li>');
+    //console.log('proposal', prop);
+    li.text(this.rawItemToText(rawitem));
+    li.attr('data', JSON.stringify(rawitem));
+    li.on('click', this.itemChooser);
+    li.addClass('dropdown-item');
+    this.list.append(li);
+  };
+  TextInputWithListElement.prototype.rawItemToText = function (rawitem) {
+    return (
+      lib.isString(rawitem) ||
+      lib.isNumber(rawitem)
+    ) ? rawitem+'' : JSON.stringify(rawitem);
+  };
+
+  TextInputWithListElement.prototype.clearList = function () {
+    if (!this.list) {
+      return;
+    }
+    this.list.find('a').off('click', this.itemChooser);
+    this.list.empty();
+  };
+
+  TextInputWithListElement.prototype.chooseItem = function (evnt) {
+    //console.log(evnt);
+    var data;
+    this.list.find('li').removeClass('active');
+    this.dropdown.hide();
+    if (!evnt.target) {
+      return false;
+    }
+    jQuery(evnt.target).addClass('active');
+    try {
+      data = JSON.parse(evnt.target.getAttribute('data'));
+      this.set('value', this.rawDataToTextInputValue(data));
+      this.set('chosenProposal', data);
+      return true;
+    } catch(ignore) {
+      //console.error('sta sad?', ignore, 'na', evnt.target);
+      return false;
+    }
+  };
+  TextInputWithListElement.prototype.rawDataToTextInputValue = function (rawitem) {
+    return (
+      lib.isString(rawitem) ||
+      lib.isNumber(rawitem)
+    ) ? rawitem+'' : JSON.stringify(rawitem);
+  };
+
+  TextInputWithListElement.prototype.postInitializationMethodNames = TextInputWithListElement.prototype.postInitializationMethodNames.concat(['prepareTextInput']);
+
+  applib.registerElementType('TextInputWithList', TextInputWithListElement);
+
+}
+module.exports = createTextInputWithList;
+},{}],10:[function(require,module,exports){
 (function (execlib) {
   var lib = execlib.lib,
     lR = execlib.execSuite.libRegistry,
@@ -432,7 +727,7 @@ module.exports = createQuestion;
   lR.register('allex_bootstrapwebcomponent', mylib);
 })(ALLEX)
 
-},{"./elements":2,"./markup":8}],8:[function(require,module,exports){
+},{"./elements":3,"./markup":11}],11:[function(require,module,exports){
 function createMarkups (execlib) {
   'use strict';
   var lib = execlib.lib,
@@ -447,7 +742,7 @@ function createMarkups (execlib) {
   return mylib;
 }
 module.exports = createMarkups;
-},{"./modal":9,"./question":10}],9:[function(require,module,exports){
+},{"./modal":12,"./question":13}],12:[function(require,module,exports){
 function createModalMarkups(lib, o, m, mylib) {
   'use strict';
 
@@ -497,7 +792,7 @@ function createModalMarkups(lib, o, m, mylib) {
   mylib.modalMarkup = modalMarkup;
 }
 module.exports = createModalMarkups;
-},{}],10:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 function createQuestionMarkups (lib, o, m, mylib) {
   'use strict';
 
@@ -525,4 +820,4 @@ function createQuestionMarkups (lib, o, m, mylib) {
   mylib.questionButtonsCreator = questionButtonsCreator;
 }
 module.exports = createQuestionMarkups;
-},{}]},{},[7]);
+},{}]},{},[10]);
