@@ -47,6 +47,7 @@ function createTextInputWithList (execlib, applib, mylib) {
     WebElement.prototype.__cleanUp.call(this);
   };
   TextInputWithListElement.prototype.prepareTextInput = function () {
+    this.$element.attr('spellcheck', !!this.getConfigVal('spellcheck'));
     this.$element.parent().addClass('dropdown');
     this.$element.addClass('dropdown-toggle');
     this.$element.attr('data-bs-toggle', 'dropdown');
@@ -55,16 +56,18 @@ function createTextInputWithList (execlib, applib, mylib) {
     this.listContainer.css({
       'overflow-y': 'auto',
       'overflow-x': 'hidden',
-      'max-height': 200
+      'max-height': 200,
+      position: 'relative'
     });
     this.list = jQuery('<ul>');
     this.list.css({
       margin: 0,
-      'padding-inline-start': 0
+      'padding-inline-start': 0,
+      position: 'relative'
     });
     this.listContainer.append(this.list);
     this.listContainer.insertAfter(this.$element);
-    this.dropdown = new bootstrap.Dropdown(this.$element[0], {});
+    this.dropdown = new bootstrap.Dropdown(this.$element[0], {autoClose:false});
     this.$element.on('keydown', this.waiter.triggerer);
   };
   TextInputWithListElement.prototype.processWaiter = function () {
@@ -110,17 +113,16 @@ function createTextInputWithList (execlib, applib, mylib) {
     this.list.find('li').removeClass('active');
     this.dropdown.hide();
     if (!evnt.target) {
-      return false;
+      return null;
     }
     jQuery(evnt.target).addClass('active');
     try {
       data = JSON.parse(evnt.target.getAttribute('data'));
       this.set('value', this.rawDataToTextInputValue(data));
-      this.set('chosenProposal', data);
-      return true;
+      return evnt.target;
     } catch(ignore) {
       //console.error('sta sad?', ignore, 'na', evnt.target);
-      return false;
+      return null;
     }
   };
   TextInputWithListElement.prototype.rawDataToTextInputValue = function (rawitem) {
