@@ -12,7 +12,6 @@ function createCustomSelect (execlib, applib, mylib) {
     this.options = null;
     this.selectedValue = null;
     this.optionMap = new lib.Map();
-    this.hoppingToList = false;
     this.onDropDownShower = this.onDropDownShow.bind(this);
     this.onDropDownShowner = this.onDropDownShown.bind(this);
     this.onFocuser = this.onFocus.bind(this);
@@ -34,7 +33,6 @@ function createCustomSelect (execlib, applib, mylib) {
     this.onKeyDowner = null;
     this.onBlurer = null;
     this.onFocuser = null;
-    this.hoppingToList = null;
     if (this.optionMap) {
       this.optionMap.destroy();
     }
@@ -95,7 +93,6 @@ function createCustomSelect (execlib, applib, mylib) {
     this.set('value', this.rawDataToTextInputValue(optdata.data));
   };
   CustomSelectElement.prototype.chooseItem = function (evnt) {
-    this.hoppingToList = true;
     return TextInputWithListElement.prototype.chooseItem.call(this, evnt);
   };
 
@@ -128,7 +125,6 @@ function createCustomSelect (execlib, applib, mylib) {
     this.$element.on('keyup', this.onKeyUper);
   };
   CustomSelectElement.prototype.onDropDownShow = function (evntignored) {
-    this.hoppingToList = true;
     this.listContainer.width(this.$element.outerWidth());
   };
   CustomSelectElement.prototype.onDropDownShown = function (evntignored) {
@@ -136,7 +132,6 @@ function createCustomSelect (execlib, applib, mylib) {
     if (chosen) {
       this.scrollInChosenElement(chosen);
     }
-    this.hoppingToList = false;
   };
 
   CustomSelectElement.prototype.onFocus = function () {
@@ -296,6 +291,7 @@ function createCustomSelect (execlib, applib, mylib) {
   applib.registerElementType('CustomSelect', CustomSelectElement);
 }
 module.exports = createCustomSelect;
+
 },{}],2:[function(require,module,exports){
 function createDataModalElement (lib, applib) {
   'use strict';
@@ -523,6 +519,9 @@ function createPopups(execlib, applib, mylib) {
     this.setTitle(obj.title);
     this.setBody(obj.body);
     this.setFooter(obj.footer);
+    if (lib.isFunction(obj.cb)) {
+      obj.cb();
+    }
     this.set('actual', true);
   };
   PopUpElement.prototype.setTitle = function (title) {
@@ -609,6 +608,7 @@ function createPopups(execlib, applib, mylib) {
   applib.registerElementType('PopUpWithWidget', PopUpWithWidgetElement);
 }
 module.exports = createPopups;
+
 },{}],7:[function(require,module,exports){
 function createQuestion(execlib, applib, mylib) {
   'use strict';
@@ -626,7 +626,8 @@ function createQuestion(execlib, applib, mylib) {
     this.showElements({
       title: config.title,
       body: mylib.markups.questionBodyCreator(config.caption),
-      footer: buttons.generateButtonsMarkup(config.buttons)
+      footer: buttons.generateButtonsMarkup(config.buttons),
+      cb: config.onCreated
     });
     return buttons.go();
   };
@@ -964,12 +965,127 @@ module.exports = createTextInputWithList;
     mylib = {};
 
   mylib.markups = require('./markup')(execlib);
+  mylib.jobs = require('./jobs')(execlib);
   require('./elements')(execlib, applib, mylib);
 
   lR.register('allex_bootstrapwebcomponent', mylib);
 })(ALLEX)
 
-},{"./elements":3,"./markup":11}],11:[function(require,module,exports){
+},{"./elements":3,"./jobs":11,"./markup":13}],11:[function(require,module,exports){
+function createJobs (execlib) {
+  'use strict';
+  var mylib = {
+    question2function: require('./question2functioncreator')(execlib.lib)
+  };
+
+  return mylib;
+}
+module.exports = createJobs;
+},{"./question2functioncreator":12}],12:[function(require,module,exports){
+function createQuestion2FunctionJobs (lib) {
+  'use strict';
+
+  var mylib = {mixins:{}};
+  function ParamQuestion2FunctionJob (question, func, defer) {
+    lib.qlib.JobOnDestroyable.call(this, question, defer);
+    this.func = func;
+    this.uid = lib.uid();
+  }
+  lib.inherit(ParamQuestion2FunctionJob, lib.qlib.JobOnDestroyable);
+  ParamQuestion2FunctionJob.prototype.destroy = function () {
+    this.uid = null;
+    this.func = null;
+    lib.qlib.JobOnDestroyable.prototype.destroy.call(this);
+  };
+  ParamQuestion2FunctionJob.prototype.go = function () {
+    var ok = this.okToGo();
+    if (!ok.ok) {
+      return ok.val;
+    }
+    this.destroyable.ask({
+      type: 'YesNo',
+      title: this.title(),
+      caption: this.createInput(),
+      onCreated: console.log.bind(console, 'created'),
+      yes: this.okCaption(),
+      no: 'Cancel'
+    }).then(
+      this.onQuestion.bind(this),
+      this.resolve.bind(this, false)
+    );
+    return ok.val;
+  };
+  ParamQuestion2FunctionJob.prototype.onQuestion = function (res) {
+    var val;
+    if (!this.okToProceed()) {
+      return;
+    }
+    if (!res) {
+      this.resolve(false);
+      return;
+    }
+    val = this.destroyable.$element.find('[fixquestionelement="'+this.uid+'"]').val();
+    val = this.postProcessInput(val);
+    if (!lib.defined(val)) {
+      this.resolve(false);
+      return;
+    }
+    console.log('ok', res, val);
+    lib.qlib.promise2defer(this.func(this.argumentArrayForFunction(val)), this);
+  };
+  ParamQuestion2FunctionJob.prototype.initialInputValue = function () {
+    return '';
+  };
+  ParamQuestion2FunctionJob.prototype.postProcessInput = function (val) {
+    return val;
+  };
+  ParamQuestion2FunctionJob.prototype.argumentArrayForFunction = function (val) {
+    return [val];
+  };
+  mylib.Param = ParamQuestion2FunctionJob;
+
+  function InputParamQuestion2FunctionJob (question, func, defer) {
+    ParamQuestion2FunctionJob.call(this, question, func, defer);
+  }
+  lib.inherit(InputParamQuestion2FunctionJob, ParamQuestion2FunctionJob);
+  InputParamQuestion2FunctionJob.prototype.createInput = function () {
+    return '<'+this.inputType+' fixquestionelement="'+this.uid+'" value="'+(
+      this.initialInputValue()
+    )+'"/>';
+  };
+  mylib.Input = InputParamQuestion2FunctionJob;
+
+  function NumberInputMixin () {
+
+  }
+  NumberInputMixin.prototype.postProcessInput = function (val) {
+    val = parseInt(val);
+    if (isNaN(val)) {
+      return;
+    }
+    return val;
+  };
+  NumberInputMixin.addMethods = function (klass) {
+    lib.inheritMethods(klass, NumberInputMixin
+      ,'postProcessInput'
+    );
+    klass.prototype.inputType = 'input type="number"';
+  };
+  mylib.mixins.Number = NumberInputMixin;
+
+  function TextAreaParamQuestion2FunctionJob (question, func, defer) {
+    ParamQuestion2FunctionJob.call(this, question, func, defer);
+  }
+  lib.inherit(TextAreaParamQuestion2FunctionJob, ParamQuestion2FunctionJob);
+  TextAreaParamQuestion2FunctionJob.prototype.createInput = function () {
+    return '<textarea fixquestionelement="'+this.uid+'">'+this.initialInputValue()+'</textarea>';
+  };
+  mylib.TextArea = TextAreaParamQuestion2FunctionJob;
+
+  return mylib;
+}
+module.exports = createQuestion2FunctionJobs;
+},{}],13:[function(require,module,exports){
 function createMarkups (execlib) {
   'use strict';
   var lib = execlib.lib,
@@ -984,7 +1100,7 @@ function createMarkups (execlib) {
   return mylib;
 }
 module.exports = createMarkups;
-},{"./modal":12,"./question":13}],12:[function(require,module,exports){
+},{"./modal":14,"./question":15}],14:[function(require,module,exports){
 function createModalMarkups(lib, o, m, mylib) {
   'use strict';
 
@@ -1034,7 +1150,7 @@ function createModalMarkups(lib, o, m, mylib) {
   mylib.modalMarkup = modalMarkup;
 }
 module.exports = createModalMarkups;
-},{}],13:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 function createQuestionMarkups (lib, o, m, mylib) {
   'use strict';
 

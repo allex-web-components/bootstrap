@@ -14,7 +14,8 @@ function createQuestion(execlib, applib, mylib) {
     this.showElements({
       title: config.title,
       body: mylib.markups.questionBodyCreator(config.caption),
-      footer: buttons.generateButtonsMarkup(config.buttons)
+      footer: buttons.generateButtonsMarkup(config.buttons),
+      cb: config.onCreated
     });
     return buttons.go();
   };

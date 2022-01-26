@@ -53,6 +53,9 @@ function createPopups(execlib, applib, mylib) {
     this.setTitle(obj.title);
     this.setBody(obj.body);
     this.setFooter(obj.footer);
+    if (lib.isFunction(obj.cb)) {
+      obj.cb();
+    }
     this.set('actual', true);
   };
   PopUpElement.prototype.setTitle = function (title) {
