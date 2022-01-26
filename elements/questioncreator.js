@@ -76,8 +76,8 @@ function createQuestion(execlib, applib, mylib) {
     this.resolve(result);
   };
 
-  function YesNoHandler (question, defer) {
-    AskHandler.call(this, question, defer);
+  function YesNoHandler (question, config, defer) {
+    AskHandler.call(this, question, config, defer);
     this.yesClicker = this.resolverWith.bind(this, true);
     this.noClicker = this.resolverWith.bind(this, false);
   }

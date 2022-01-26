@@ -10,9 +10,11 @@ function createCustomSelect (execlib, applib, mylib) {
     TextInputWithListElement.call(this, id, options);
     this.options = null;
     this.selectedValue = null;
+    this.optionMap = new lib.Map();
     this.onDropDownShower = this.onDropDownShow.bind(this);
     this.onDropDownShowner = this.onDropDownShown.bind(this);
     this.onFocuser = this.onFocus.bind(this);
+    this.onBlurer = this.onBlur.bind(this);
     this.onKeyDowner = this.onKeyDown.bind(this);
     this.onKeyUper = this.onKeyUp.bind(this);
   }
@@ -21,13 +23,19 @@ function createCustomSelect (execlib, applib, mylib) {
     if (this.$element) {
       this.$element.off('shown.bs.dropdown', this.onDropDownShowner);
       this.$element.off('show.bs.dropdown', this.onDropDownShower);
+      this.$element.off('blur', this.onBlurer);
       this.$element.off('focus', this.onFocuser);
       this.$element.off('keydown', this.onKeyDowner);
       this.$element.off('keyup', this.onKeyUper);
     }
     this.onKeyUper = null;
     this.onKeyDowner = null;
+    this.onBlurer = null;
     this.onFocuser = null;
+    if (this.optionMap) {
+      this.optionMap.destroy();
+    }
+    this.optionMap = null;
     this.selectedValue = null;
     this.options = null;
     TextInputWithListElement.prototype.__cleanUp.call(this);
@@ -52,7 +60,7 @@ function createCustomSelect (execlib, applib, mylib) {
     return rawitem[titlepath];
   };
   CustomSelectElement.prototype.rawDataToTextInputValue = function (rawitem) {
-    this.set('selectedValue', rawitem ? rawitem[this.getConfigVal('valuepath')] : '');
+    this.set('selectedValue', valueOfData(rawitem, this.getConfigVal('valuepath'), ''));
     return this.rawItemToText(rawitem);
   };
   CustomSelectElement.prototype.chooseItem = function (evnt) {
@@ -61,18 +69,40 @@ function createCustomSelect (execlib, applib, mylib) {
       this.showAllOptions();
     }
   };
-  CustomSelectElement.prototype.scrollInChosenElement = function (chosen) {
-    var contst = this.listContainer[0].scrollTop;
-    var listtop = this.list.offset().top;
-    var chosentop = jQuery(chosen).offset().top;
-    this.listContainer[0].scrollTop = chosentop - listtop;
+  CustomSelectElement.prototype.makeUseOfProducedOption = function (li, rawitem) {
+    var id = lib.uid();
+    li.text(this.rawItemToText(rawitem));
+    li.attr('data', JSON.stringify(id));
+    this.optionMap.add(id, {
+      li: li,
+      data: rawitem,
+      value: valueOfData(rawitem, this.getConfigVal('valuepath'))
+    });
+    this.list.append(li);
+  };
+  CustomSelectElement.prototype.makeUseOfChosenItemData = function (data) {
+    //data is actually id
+    if (!this.optionMap) {
+      return;
+    }
+    var optdata = this.optionMap.get(data);
+    if (!optdata) {
+      return;
+    }
+    this.set('value', this.rawDataToTextInputValue(optdata.data));
+  };
+  CustomSelectElement.prototype.chooseItem = function (evnt) {
+    return TextInputWithListElement.prototype.chooseItem.call(this, evnt);
   };
 
   CustomSelectElement.prototype.set_options = function (options) {
+    if (this.optionMap) {
+      this.optionMap.purge();
+    }
     this.options = options;
     this.fillList(options);
     if (lib.isArray(options) && options.length>0) {
-      this.set('selectedValue', options[0][this.getConfigVal('valuepath')]);
+      this.set('selectedValue', valueOfData(options[0], this.getConfigVal('valuepath')));
     }
     return true;
   };
@@ -80,34 +110,16 @@ function createCustomSelect (execlib, applib, mylib) {
     this.selectedValue = selval;
     this.$element.val('');
     this.chooseItem({
-      target: jqhelpers.jQueryPick(
-        this.list, 
-        'li', 
-        optionForValuePicker.bind(this, this.getConfigVal('valuepath'), this.selectedValue)
-      )
-    })
-    ;
+      target: this.optionThatCorrespondsToValue(this.selectedValue)
+    });
     return true;
-  };
-  function optionForValuePicker (valpath, val, li) {
-    var data;
-    try {
-      data = JSON.parse(li.getAttribute('data'));
-      if (!data) {
-        return;
-      }
-      if (lib.isEqual(data[valpath], val)) {
-        return true;
-      }
-    } catch(e) {
-      console.error(e);
-    }
   };
 
   CustomSelectElement.prototype.prepareCustomSelect = function () {
     this.$element.on('show.bs.dropdown', this.onDropDownShower);
     this.$element.on('shown.bs.dropdown', this.onDropDownShowner);
     this.$element.on('focus', this.onFocuser);
+    this.$element.on('blur', this.onBlurer);
     this.$element.on('keydown', this.onKeyDowner);
     this.$element.on('keyup', this.onKeyUper);
   };
@@ -115,35 +127,55 @@ function createCustomSelect (execlib, applib, mylib) {
     this.listContainer.width(this.$element.outerWidth());
   };
   CustomSelectElement.prototype.onDropDownShown = function (evntignored) {
-    var chosen = jqhelpers.jQueryPick(
-      this.list, 
-      'li', 
-      optionForValuePicker.bind(this, this.getConfigVal('valuepath'), this.selectedValue)
-    );
+    var chosen = this.optionThatCorrespondsToValue(this.selectedValue);
     if (chosen) {
       this.scrollInChosenElement(chosen);
     }
   };
 
   CustomSelectElement.prototype.onFocus = function () {
+    lib.runNext(this.dropdown.show.bind(this.dropdown), 150);
     this.$element.select();
+  };
+  CustomSelectElement.prototype.onBlur = function () {
+    lib.runNext(this.dropdown.hide.bind(this.dropdown), 300);
   };
   CustomSelectElement.prototype.showAllOptions = function () {
     jqhelpers.jQueryForEach(this.list, 'li', function(li) {jQuery(li).show();});
   };
   CustomSelectElement.prototype.onKeyDown = function (evnt) {
+    if (evnt && evnt.originalEvent) {
+      //console.log ('down', evnt.originalEvent.keyCode, evnt.originalEvent.key)
+    }
   };
   CustomSelectElement.prototype.onKeyUp = function (evnt) {
     var txtval, txtlower;
-    if (evnt && evnt.originalEvent && evnt.originalEvent.keyCode==13) {
-      this.showAllOptions();
-      this.$element.val(this.textThatCorrespondsToValue(this.get('selectedValue')));
-      this.$element.select();
-      return false;
+    if (evnt && evnt.originalEvent) {
+      //console.log('up', evnt.originalEvent.keyCode, evnt.originalEvent.key);
+      if (evnt.originalEvent.key.length>1) {
+        switch (evnt.originalEvent.key) {
+          case 'Enter':
+            this.showAllOptions();
+            this.$element.val(this.textThatCorrespondsToValue(this.get('selectedValue')));
+            this.scrollInChosenElement(this.optionThatCorrespondsToValue(this.get('selectedValue')));
+            this.$element.select();
+            return false;
+          case 'Backspace':
+          case 'ArrowLeft':
+          case 'ArrowRight':
+          case 'End':
+          case 'Home':
+              break;
+          default:
+            return false;
+        }
+      }
     }
     txtval = this.$element.val();
     txtlower = txtval.toLowerCase();
+    //console.log('hiding all options not containing', txtlower);
     this.hideAllOptionsNotContaining(txtlower);
+    this.dropdown.show();
   };
 
   CustomSelectElement.prototype.isTextAnOptionText = function (txt) {
@@ -167,17 +199,50 @@ function createCustomSelect (execlib, applib, mylib) {
     jQuery(li)[optionTextLowerContains(txt, li) ? 'show': 'hide']();
   }
 
-  CustomSelectElement.prototype.textThatCorrespondsToValue = function (val) {
-    var elem = jqhelpers.jQueryPick(
-      this.list,
-      'li',
-      optionForValuePicker.bind(this, this.getConfigVal('valuepath'), val)
-    );
-    val = null;
-    if (elem) {
-      return elem.innerHTML;
+  CustomSelectElement.prototype.optionThatCorrespondsToValue = function (val) {
+    var valuepath, ret;
+    if (!this.optionMap) {
+      return;
     }
-    return '';
+    valuepath = this.getConfigVal('valuepath');
+    ret = this.optionMap.traverseConditionally(function(optdata) {
+      if (lib.isEqual(optdata.value, val)){
+        return optdata.li[0];
+      }
+    });
+    valuepath = null;
+    val = null;
+    return ret;
+  };
+  CustomSelectElement.prototype.textThatCorrespondsToValue = function (val) {
+    var elem = this.optionThatCorrespondsToValue(val);
+    return elem ? elem.innerHTML : '';
+  };
+  CustomSelectElement.prototype.scrollInChosenElement = function (chosen) {
+    var contst = this.listContainer[0].scrollTop;
+    var listtop = this.list.offset().top;
+    var chosentop = jQuery(chosen).offset().top;
+    this.listContainer[0].scrollTop = chosentop - listtop;
+  };
+
+  //statics
+  function valueOfData (data, valuepath, dflt) {
+    return data ? (valuepath ? data[valuepath] : data) : (lib.defined(dflt) ? dflt : data);
+  }
+
+  function optionForValuePicker (valpath, val, li) {
+    var data;
+    try {
+      data = JSON.parse(li.getAttribute('data'));
+      if (!data) {
+        return;
+      }
+      if (lib.isEqual(valueOfData(data, valpath), val)) {
+        return true;
+      }
+    } catch(e) {
+      console.error(e);
+    }
   };
 
   //title reducer via titlefields

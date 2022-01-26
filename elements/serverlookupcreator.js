@@ -32,6 +32,11 @@ function createServerLookup (execlib, applib, mylib) {
     }
     this.clearList();
   };
+  ServerLookupElement.prototype.makeUseOfChosenItemData = function (data) {
+    var ret = TextInputWithListElement.prototype.makeUseOfChosenItemData.call(this, data);
+    this.set('chosenProposal', data);
+    return ret;
+  };
 
   ServerLookupElement.prototype.createIntegrationEnvironmentDescriptor = function (myname) {
     var funcname = this.serverLookupFuncName();
