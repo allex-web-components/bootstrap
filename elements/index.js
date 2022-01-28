@@ -9,5 +9,6 @@ function createElements (execlib, applib, mylib) {
 	require('./textinputwithlistcreator')(execlib, applib, mylib);
 	require('./serverlookupcreator')(execlib, applib, mylib);
 	require('./customselectcreator')(execlib, applib, mylib);
+	require('./toastscreator')(execlib, applib, mylib);
 }
 module.exports = createElements;

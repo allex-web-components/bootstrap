@@ -328,10 +328,11 @@ function createElements (execlib, applib, mylib) {
 	require('./textinputwithlistcreator')(execlib, applib, mylib);
 	require('./serverlookupcreator')(execlib, applib, mylib);
 	require('./customselectcreator')(execlib, applib, mylib);
+	require('./toastscreator')(execlib, applib, mylib);
 }
 module.exports = createElements;
 
-},{"./customselectcreator":1,"./datamodalcreator":2,"./modalcreator":4,"./modalformcreator":5,"./popupcreator":6,"./questioncreator":7,"./serverlookupcreator":8,"./textinputwithlistcreator":9}],4:[function(require,module,exports){
+},{"./customselectcreator":1,"./datamodalcreator":2,"./modalcreator":4,"./modalformcreator":5,"./popupcreator":6,"./questioncreator":7,"./serverlookupcreator":8,"./textinputwithlistcreator":9,"./toastscreator":10}],4:[function(require,module,exports){
 function createModalElement (lib, applib) {
   'use strict';
 
@@ -958,6 +959,96 @@ function createTextInputWithList (execlib, applib, mylib) {
 }
 module.exports = createTextInputWithList;
 },{}],10:[function(require,module,exports){
+function createToast (execlib, applib, mylib) {
+  'use strict';
+  var lib = execlib.lib,
+    WebElement = applib.getElementType('WebElement');
+
+  function ToastContainerElement (id, options) {
+    options = options || {};
+    options.default_markup = options.default_markup || mylib.markups.toastsContainer(options.markup);
+    WebElement.call(this, id, options);
+  }
+  lib.inherit(ToastContainerElement, WebElement);
+  ToastContainerElement.prototype.addToast = function (options) {
+    this.createElement({
+      type: 'Toast',
+      name: lib.uid(),
+      options: lib.extend(options, {
+        actual: false
+      })
+    });
+  };
+  ToastContainerElement.prototype.monitorPromise = function (promise, options) {
+    if (!lib.q.isThenable(promise)){
+      return;
+    }
+    options = options || {};
+    promise.then(
+      this.showPromiseSuccessToast.bind(this, options.success),
+      this.showPromiseFailToast.bind(this, options.fail)
+    );
+  };
+  ToastContainerElement.prototype.showPromiseSuccessToast = function (options, res) {
+    var title, caption;
+    options = options || {};
+    title = lib.isFunction(options.title) ? options.title(res) : options.title;
+    caption = lib.isFunction(options.caption) ? options.caption(res) : options.caption;
+    this.addToast({
+      delay: lib.isNumber(options.delay) ? options.delay : 1000,
+      autohide: ('autohide' in options ? options.autohide : true),
+      animation: ('animation' in options ? options.animation : true),
+      markup: {
+        status: 'success',
+        header: {
+          contents: title || 'Success'
+        },
+        body: {
+          contents: caption || res
+        }
+      }
+    })
+  };
+  ToastContainerElement.prototype.showPromiseFailToast = function (options, reason) {
+    var title, caption;
+    options = options || {};
+    title = lib.isFunction(options.title) ? options.title(reason) : options.title;
+    caption = lib.isFunction(options.caption) ? options.caption(reason) : options.caption;
+    this.addToast({
+      delay: lib.isNumber(options.delay) ? options.delay : 3000,
+      autohide: ('autohide' in options ? options.autohide : true),
+      animation: ('animation' in options ? options.animation : true),
+      markup: {
+        status: 'error',
+        header: {
+          contents: title || 'Error'
+        },
+        body: {
+          contents: caption || (reason ? (reason.message ? reason.message : reason) : 'Null Error')
+        }
+      }
+    })
+  };
+  applib.registerElementType('ToastContainer', ToastContainerElement);
+
+  function ToastElement (id, options) {
+    options = options || {};
+    options.default_markup = options.default_markup || mylib.markups.toast(options.markup);
+    WebElement.call(this, id, options);
+  }
+  lib.inherit(ToastElement, WebElement);
+  ToastElement.prototype.doToast = function () {
+    var options = lib.pick(this.config, ['delay', 'animation', 'autohide']);
+    this.$element.on('hidden.bs.toast', this.destroy.bind(this));
+    var toast = new bootstrap.Toast(this.$element[0], options);
+    toast.show();
+    this.set('actual', true);
+  };
+  ToastElement.prototype.postInitializationMethodNames = WebElement.prototype.postInitializationMethodNames.concat(['doToast']);
+  applib.registerElementType('Toast', ToastElement);
+}
+module.exports = createToast;
+},{}],11:[function(require,module,exports){
 (function (execlib) {
   var lib = execlib.lib,
     lR = execlib.execSuite.libRegistry,
@@ -971,7 +1062,7 @@ module.exports = createTextInputWithList;
   lR.register('allex_bootstrapwebcomponent', mylib);
 })(ALLEX)
 
-},{"./elements":3,"./jobs":11,"./markup":13}],11:[function(require,module,exports){
+},{"./elements":3,"./jobs":12,"./markup":14}],12:[function(require,module,exports){
 function createJobs (execlib) {
   'use strict';
   var mylib = {
@@ -981,23 +1072,21 @@ function createJobs (execlib) {
   return mylib;
 }
 module.exports = createJobs;
-},{"./question2functioncreator":12}],12:[function(require,module,exports){
+},{"./question2functioncreator":13}],13:[function(require,module,exports){
 function createQuestion2FunctionJobs (lib) {
   'use strict';
 
   var mylib = {mixins:{}};
-  function ParamQuestion2FunctionJob (question, func, defer) {
+  function Question2FunctionJob (question, func, defer) {
     lib.qlib.JobOnDestroyable.call(this, question, defer);
     this.func = func;
-    this.uid = lib.uid();
   }
-  lib.inherit(ParamQuestion2FunctionJob, lib.qlib.JobOnDestroyable);
-  ParamQuestion2FunctionJob.prototype.destroy = function () {
-    this.uid = null;
+  lib.inherit(Question2FunctionJob, lib.qlib.JobOnDestroyable);
+  Question2FunctionJob.prototype.destroy = function () {
     this.func = null;
     lib.qlib.JobOnDestroyable.prototype.destroy.call(this);
   };
-  ParamQuestion2FunctionJob.prototype.go = function () {
+  Question2FunctionJob.prototype.go = function () {
     var ok = this.okToGo();
     if (!ok.ok) {
       return ok.val;
@@ -1006,7 +1095,7 @@ function createQuestion2FunctionJobs (lib) {
       type: 'YesNo',
       title: this.title(),
       caption: this.createInput(),
-      onCreated: console.log.bind(console, 'created'),
+      //onCreated: console.log.bind(console, 'created'),
       yes: this.okCaption(),
       no: 'Cancel'
     }).then(
@@ -1015,8 +1104,7 @@ function createQuestion2FunctionJobs (lib) {
     );
     return ok.val;
   };
-  ParamQuestion2FunctionJob.prototype.onQuestion = function (res) {
-    var val;
+  Question2FunctionJob.prototype.onQuestion = function (res) {
     if (!this.okToProceed()) {
       return;
     }
@@ -1024,14 +1112,52 @@ function createQuestion2FunctionJobs (lib) {
       this.resolve(false);
       return;
     }
+
+    lib.qlib.promise2defer(this.func(this.argumentArrayForFunction()), this);
+  };
+  mylib.Base = Question2FunctionJob;
+
+  function Question2PredefinedFunctionJob (question, func, options, defer) {
+    Question2FunctionJob.call(this, question, func, defer);
+    this.options = options;
+  }
+  lib.inherit(Question2PredefinedFunctionJob, Question2FunctionJob);
+  Question2PredefinedFunctionJob.prototype.destroy = function () {
+    this.options = null;
+    Question2FunctionJob.prototype.destroy.call(this);
+  };
+  Question2FunctionJob.prototype.title = function () {
+    return this.options.title;
+  };
+  Question2FunctionJob.prototype.createInput = function () {
+    return this.options.caption;
+  };
+  Question2FunctionJob.prototype.okCaption = function () {
+    return this.options.ok || 'Yes';
+  };
+  Question2PredefinedFunctionJob.prototype.argumentArrayForFunction = function () {
+    return this.options.params;
+  };
+  mylib.Predefined = Question2PredefinedFunctionJob;
+
+  function ParamQuestion2FunctionJob (question, func, defer) {
+    Question2FunctionJob.call(this, question, func, defer);
+    this.uid = lib.uid();
+  }
+  lib.inherit(ParamQuestion2FunctionJob, Question2FunctionJob);
+  ParamQuestion2FunctionJob.prototype.destroy = function () {
+    this.uid = null;
+    Question2FunctionJob.prototype.destroy.call(this);
+  };
+  ParamQuestion2FunctionJob.prototype.argumentArrayForFunction = function () {
+    var val;
     val = this.destroyable.$element.find('[fixquestionelement="'+this.uid+'"]').val();
     val = this.postProcessInput(val);
     if (!lib.defined(val)) {
       this.resolve(false);
       return;
     }
-    console.log('ok', res, val);
-    lib.qlib.promise2defer(this.func(this.argumentArrayForFunction(val)), this);
+    return this.parametrizedArgumentArrayForFunction(val);
   };
   ParamQuestion2FunctionJob.prototype.initialInputValue = function () {
     return '';
@@ -1039,7 +1165,7 @@ function createQuestion2FunctionJobs (lib) {
   ParamQuestion2FunctionJob.prototype.postProcessInput = function (val) {
     return val;
   };
-  ParamQuestion2FunctionJob.prototype.argumentArrayForFunction = function (val) {
+  ParamQuestion2FunctionJob.prototype.parametrizedArgumentArrayForFunction = function (val) {
     return [val];
   };
   mylib.Param = ParamQuestion2FunctionJob;
@@ -1085,22 +1211,24 @@ function createQuestion2FunctionJobs (lib) {
   return mylib;
 }
 module.exports = createQuestion2FunctionJobs;
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 function createMarkups (execlib) {
   'use strict';
   var lib = execlib.lib,
     lR = execlib.execSuite.libRegistry,
     o = lR.get('allex_templateslitelib').override,
     m = lR.get('allex_htmltemplateslib'),
+    s = lR.get('allex_svgtemplateslib'),
     mylib = {};
 
     require('./modal')(lib, o, m, mylib);
     require('./question')(lib, o, m, mylib);
+    require('./toasts')(lib, o, m, s, mylib);
 
   return mylib;
 }
 module.exports = createMarkups;
-},{"./modal":14,"./question":15}],14:[function(require,module,exports){
+},{"./modal":15,"./question":16,"./toasts":17}],15:[function(require,module,exports){
 function createModalMarkups(lib, o, m, mylib) {
   'use strict';
 
@@ -1150,7 +1278,7 @@ function createModalMarkups(lib, o, m, mylib) {
   mylib.modalMarkup = modalMarkup;
 }
 module.exports = createModalMarkups;
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 function createQuestionMarkups (lib, o, m, mylib) {
   'use strict';
 
@@ -1178,4 +1306,103 @@ function createQuestionMarkups (lib, o, m, mylib) {
   mylib.questionButtonsCreator = questionButtonsCreator;
 }
 module.exports = createQuestionMarkups;
-},{}]},{},[10]);
+},{}],17:[function(require,module,exports){
+function createToastsMarkup (lib, o, m, s, mylib) {
+  'use strict';
+
+  function toastsContainer (options) {
+    options = options || {};
+    return o(m.div
+      , 'CLASS', lib.joinStringsWith('toast-container', options.class, ' ')
+      , 'ATTRS', lib.joinStringsWith('', options.attrs, ' ')
+    )
+  }
+  mylib.toastsContainer = toastsContainer;
+
+  function statusColor (status) {
+    switch (status) {
+      case 'error':
+        return 'red';
+      case 'warning':
+        return 'yellow';
+      case 'success':
+        return 'green';
+      case 'info':
+        return 'grey';
+      default:
+        return 'black';
+    }
+  }
+
+  function statusIcon (options) {
+    if (!options.status) {
+      return '';
+    }
+    return o(s.svg
+      , 'CLASS', 'bd-placeholder-img rounded-3 me-2'
+      , 'WIDTH', '15'
+      , 'HEIGHT', '15'
+      , 'CONTENTS', o(s.rect
+        , 'FILL', statusColor(options.status)
+      )
+    );
+  }
+
+  function toast (options) {
+    options = options || {};
+    options.body = options.body || {};
+    var contents = [];
+    if (options.header) {
+      contents.push(o(m.div
+        , 'CLASS', lib.joinStringsWith('toast-header', options.header.class, ' ')
+        , 'ATTRS', lib.joinStringsWith('', options.header.attrs, ' ')
+        , 'CONTENTS', [
+          statusIcon(options),
+          o(m.strong
+            , 'CLASS', 'me-auto'
+            , 'CONTENTS', options.header.contents || ''
+          ),
+          o(m.button
+            , 'CLASS', 'btn-close'
+            , 'ATTRS', 'data-bs-dismiss="toast" aria-label="Close"'
+          )
+        ]
+      ));
+    }
+    contents.push(o(m.div
+      , 'CLASS', lib.joinStringsWith('toast-body', options.body.class, ' ')
+      , 'ATTRS', lib.joinStringsWith('', options.body.attrs, ' ')
+      , 'CONTENTS', lib.joinStringsWith('',options.body.contents || '', ' ')
+    ));
+    return o(m.div
+      , 'CLASS', lib.joinStringsWith('toast fade show', options.class, ' ')
+      , 'ATTRS', lib.joinStringsWith('', options.attrs, ' ')
+      , 'CONTENTS', contents
+    );
+  }
+  mylib.toast = toast;
+
+  function toastsSubContainer (options) {
+    options = options || {};
+    options.pane = options.pane || {};
+    options.button = options.button || {};
+    options.wrapper = options.wrapper || {};
+    return o(m.div
+      , 'CLASS', lib.joinStringsWith('dropdown', options.pane.class, ' ')
+      , 'ATTRS', lib.joinStringsWith('style="width=100%;"', options.pane.attrs, ' ')
+      , 'CONTENTS', [
+        o(m.button
+          , 'CLASS', lib.joinStringsWith('dropdown', options.button.class, ' ')
+          , 'ATTRS', lib.joinStringsWith('style="width=100%;"', options.button.attrs, ' ')
+        ),
+        o(m.ul
+          , 'CLASS', lib.joinStringsWith('dropdown', options.wrapper.class, ' ')
+          , 'ATTRS', lib.joinStringsWith('style="width=100%;"', options.wrapper.attrs, ' ')
+        )
+      ]
+    )
+  }
+  mylib.toastsSubContainer = toastsSubContainer;
+}
+module.exports = createToastsMarkup;
+},{}]},{},[11]);
