@@ -11,9 +11,12 @@ function createCustomSelect (execlib, applib, mylib) {
     TextInputWithListElement.call(this, id, options);
     this.options = null;
     this.selectedValue = null;
+    this.selectedRawItem = null;
     this.optionMap = new lib.Map();
     this.onDropDownShower = this.onDropDownShow.bind(this);
     this.onDropDownShowner = this.onDropDownShown.bind(this);
+    this.onDropDownHider = this.onDropDownHide.bind(this);
+    this.onDropDownHiddener = this.onDropDownHidden.bind(this);
     this.onFocuser = this.onFocus.bind(this);
     this.onBlurer = this.onBlur.bind(this);
     this.onKeyDowner = this.onKeyDown.bind(this);
@@ -24,6 +27,8 @@ function createCustomSelect (execlib, applib, mylib) {
     if (this.$element) {
       this.$element.off('shown.bs.dropdown', this.onDropDownShowner);
       this.$element.off('show.bs.dropdown', this.onDropDownShower);
+      this.$element.off('hide.bs.dropdown', this.onDropDownHider);
+      this.$element.off('hidden.bs.dropdown', this.onDropDownHiddener);
       this.$element.off('blur', this.onBlurer);
       this.$element.off('focus', this.onFocuser);
       this.$element.off('keydown', this.onKeyDowner);
@@ -33,10 +38,15 @@ function createCustomSelect (execlib, applib, mylib) {
     this.onKeyDowner = null;
     this.onBlurer = null;
     this.onFocuser = null;
+    this.onDropDownHiddener = null;
+    this.onDropDownHider = null;
+    this.onDropDownShowner = null;
+    this.onDropDownShower = null;
     if (this.optionMap) {
       this.optionMap.destroy();
     }
     this.optionMap = null;
+    this.selectedRawItem = null;
     this.selectedValue = null;
     this.options = null;
     TextInputWithListElement.prototype.__cleanUp.call(this);
@@ -61,6 +71,7 @@ function createCustomSelect (execlib, applib, mylib) {
     return rawitem[titlepath];
   };
   CustomSelectElement.prototype.rawDataToTextInputValue = function (rawitem) {
+    this.selectedRawItem = rawitem;
     this.set('selectedValue', valueOfData(rawitem, this.getConfigVal('valuepath'), ''));
     return this.rawItemToText(rawitem);
   };
@@ -119,6 +130,8 @@ function createCustomSelect (execlib, applib, mylib) {
   CustomSelectElement.prototype.prepareCustomSelect = function () {
     this.$element.on('show.bs.dropdown', this.onDropDownShower);
     this.$element.on('shown.bs.dropdown', this.onDropDownShowner);
+    this.$element.on('hide.bs.dropdown', this.onDropDownHider);
+    this.$element.on('hidden.bs.dropdown', this.onDropDownHiddener);
     this.$element.on('focus', this.onFocuser);
     this.$element.on('blur', this.onBlurer);
     this.$element.on('keydown', this.onKeyDowner);
@@ -132,6 +145,14 @@ function createCustomSelect (execlib, applib, mylib) {
     if (chosen) {
       this.scrollInChosenElement(chosen);
     }
+  };
+  CustomSelectElement.prototype.onDropDownHide = function (evntignored) {
+    if (this.selectedRawItem) {
+      this.$element.val(this.rawItemToText(this.selectedRawItem));
+    }
+  };
+  CustomSelectElement.prototype.onDropDownHidden = function (evntignored) {
+    this.list.find('li').show();
   };
 
   CustomSelectElement.prototype.onFocus = function () {
