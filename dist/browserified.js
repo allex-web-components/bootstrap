@@ -1083,21 +1083,20 @@ module.exports = createToast;
   lR.register('allex_bootstrapwebcomponent', mylib);
 })(ALLEX)
 
-},{"./elements":3,"./jobs":12,"./markup":14}],12:[function(require,module,exports){
+},{"./elements":3,"./jobs":12,"./markup":18}],12:[function(require,module,exports){
 function createJobs (execlib) {
   'use strict';
   var mylib = {
-    question2function: require('./question2functioncreator')(execlib.lib)
+    question2function: require('./question2function')(execlib.lib)
   };
 
   return mylib;
 }
 module.exports = createJobs;
-},{"./question2functioncreator":13}],13:[function(require,module,exports){
-function createQuestion2FunctionJobs (lib) {
+},{"./question2function":14}],13:[function(require,module,exports){
+function createQuestion2FunctionJobBase (lib, mylib) {
   'use strict';
 
-  var mylib = {mixins:{}};
   function Question2FunctionJob (question, func, defer) {
     lib.qlib.JobOnDestroyable.call(this, question, defer);
     this.func = func;
@@ -1136,30 +1135,27 @@ function createQuestion2FunctionJobs (lib) {
 
     lib.qlib.promise2defer(this.func(this.argumentArrayForFunction()), this);
   };
-  mylib.Base = Question2FunctionJob;
+  mylib.Question2Function = Question2FunctionJob;
+}
+module.exports = createQuestion2FunctionJobBase;
+},{}],14:[function(require,module,exports){
+function createQuestion2FunctionJobs (lib) {
+  'use strict';
 
-  function Question2PredefinedFunctionJob (question, func, options, defer) {
-    Question2FunctionJob.call(this, question, func, defer);
-    this.options = options;
-  }
-  lib.inherit(Question2PredefinedFunctionJob, Question2FunctionJob);
-  Question2PredefinedFunctionJob.prototype.destroy = function () {
-    this.options = null;
-    Question2FunctionJob.prototype.destroy.call(this);
-  };
-  Question2FunctionJob.prototype.title = function () {
-    return this.options.title;
-  };
-  Question2FunctionJob.prototype.createInput = function () {
-    return this.options.caption;
-  };
-  Question2FunctionJob.prototype.okCaption = function () {
-    return this.options.ok || 'Yes';
-  };
-  Question2PredefinedFunctionJob.prototype.argumentArrayForFunction = function () {
-    return this.options.params;
-  };
-  mylib.Predefined = Question2PredefinedFunctionJob;
+  var mylib = {mixins:{}};
+  require('./basecreator')(lib, mylib);
+  require('./predefinedcreator')(lib, mylib);
+  require('./paramcreator')(lib, mylib);
+  require('./simpleinputcreator')(lib, mylib);
+
+  return mylib;
+
+}
+module.exports = createQuestion2FunctionJobs;
+},{"./basecreator":13,"./paramcreator":15,"./predefinedcreator":16,"./simpleinputcreator":17}],15:[function(require,module,exports){
+function createParamQuestion2FunctionJob (lib, mylib) {
+  'use strict';
+  var Question2FunctionJob = mylib.Question2Function;
 
   function ParamQuestion2FunctionJob (question, func, defer) {
     Question2FunctionJob.call(this, question, func, defer);
@@ -1190,49 +1186,87 @@ function createQuestion2FunctionJobs (lib) {
     return [val];
   };
   mylib.Param = ParamQuestion2FunctionJob;
+}
+module.exports = createParamQuestion2FunctionJob;
+},{}],16:[function(require,module,exports){
+function createQuestion2PredefinedFunctionJob (lib, mylib) {
+  'use strict';
+  var Question2FunctionJob = mylib.Question2Function;
 
-  function InputParamQuestion2FunctionJob (question, func, defer) {
+  function Question2PredefinedFunctionJob (question, func, options, defer) {
+    Question2FunctionJob.call(this, question, func, defer);
+    this.options = options;
+  }
+  lib.inherit(Question2PredefinedFunctionJob, Question2FunctionJob);
+  Question2PredefinedFunctionJob.prototype.destroy = function () {
+    this.options = null;
+    Question2FunctionJob.prototype.destroy.call(this);
+  };
+  Question2FunctionJob.prototype.title = function () {
+    return this.options.title;
+  };
+  Question2FunctionJob.prototype.createInput = function () {
+    return this.options.caption;
+  };
+  Question2FunctionJob.prototype.okCaption = function () {
+    return this.options.ok || 'Yes';
+  };
+  Question2PredefinedFunctionJob.prototype.argumentArrayForFunction = function () {
+    return this.options.params;
+  };
+  mylib.Predefined = Question2PredefinedFunctionJob;
+
+}
+module.exports = createQuestion2PredefinedFunctionJob;
+},{}],17:[function(require,module,exports){
+function createSimpleInputQuestion2FunctionJob (lib, mylib) {
+  'use strict';
+
+  var ParamQuestion2FunctionJob = mylib.Param;
+
+  function SimpleInputParamQuestion2FunctionJob (question, func, defer) {
     ParamQuestion2FunctionJob.call(this, question, func, defer);
   }
-  lib.inherit(InputParamQuestion2FunctionJob, ParamQuestion2FunctionJob);
-  InputParamQuestion2FunctionJob.prototype.createInput = function () {
+  lib.inherit(SimpleInputParamQuestion2FunctionJob, ParamQuestion2FunctionJob);
+  SimpleInputParamQuestion2FunctionJob.prototype.createInput = function () {
     return '<'+this.inputType+' fixquestionelement="'+this.uid+'" value="'+(
       this.initialInputValue()
     )+'"/>';
   };
-  mylib.Input = InputParamQuestion2FunctionJob;
+  mylib.SimpleInput = SimpleInputParamQuestion2FunctionJob;
 
-  function NumberInputMixin () {
+  function SimpleNumberInputMixin () {
 
   }
-  NumberInputMixin.prototype.postProcessInput = function (val) {
+  SimpleNumberInputMixin.prototype.postProcessInput = function (val) {
     val = parseInt(val);
     if (isNaN(val)) {
       return;
     }
     return val;
   };
-  NumberInputMixin.addMethods = function (klass) {
-    lib.inheritMethods(klass, NumberInputMixin
+  SimpleNumberInputMixin.addMethods = function (klass) {
+    lib.inheritMethods(klass, SimpleNumberInputMixin
       ,'postProcessInput'
     );
     klass.prototype.inputType = 'input type="number"';
   };
-  mylib.mixins.Number = NumberInputMixin;
+  mylib.mixins.SimpleNumber = SimpleNumberInputMixin;
 
-  function TextAreaParamQuestion2FunctionJob (question, func, defer) {
+  
+
+  function SimpleTextAreaParamQuestion2FunctionJob (question, func, defer) {
     ParamQuestion2FunctionJob.call(this, question, func, defer);
   }
-  lib.inherit(TextAreaParamQuestion2FunctionJob, ParamQuestion2FunctionJob);
-  TextAreaParamQuestion2FunctionJob.prototype.createInput = function () {
+  lib.inherit(SimpleTextAreaParamQuestion2FunctionJob, ParamQuestion2FunctionJob);
+  SimpleTextAreaParamQuestion2FunctionJob.prototype.createInput = function () {
     return '<textarea fixquestionelement="'+this.uid+'">'+this.initialInputValue()+'</textarea>';
   };
-  mylib.TextArea = TextAreaParamQuestion2FunctionJob;
+  mylib.SimpleTextArea = SimpleTextAreaParamQuestion2FunctionJob;
 
-  return mylib;
 }
-module.exports = createQuestion2FunctionJobs;
-},{}],14:[function(require,module,exports){
+module.exports = createSimpleInputQuestion2FunctionJob;
+},{}],18:[function(require,module,exports){
 function createMarkups (execlib) {
   'use strict';
   var lib = execlib.lib,
@@ -1249,7 +1283,7 @@ function createMarkups (execlib) {
   return mylib;
 }
 module.exports = createMarkups;
-},{"./modal":15,"./question":16,"./toasts":17}],15:[function(require,module,exports){
+},{"./modal":19,"./question":20,"./toasts":21}],19:[function(require,module,exports){
 function createModalMarkups(lib, o, m, mylib) {
   'use strict';
 
@@ -1299,7 +1333,7 @@ function createModalMarkups(lib, o, m, mylib) {
   mylib.modalMarkup = modalMarkup;
 }
 module.exports = createModalMarkups;
-},{}],16:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 function createQuestionMarkups (lib, o, m, mylib) {
   'use strict';
 
@@ -1327,7 +1361,7 @@ function createQuestionMarkups (lib, o, m, mylib) {
   mylib.questionButtonsCreator = questionButtonsCreator;
 }
 module.exports = createQuestionMarkups;
-},{}],17:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 function createToastsMarkup (lib, o, m, s, mylib) {
   'use strict';
 
