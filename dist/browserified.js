@@ -1083,17 +1083,17 @@ module.exports = createToast;
   lR.register('allex_bootstrapwebcomponent', mylib);
 })(ALLEX)
 
-},{"./elements":3,"./jobs":12,"./markup":18}],12:[function(require,module,exports){
+},{"./elements":3,"./jobs":12,"./markup":19}],12:[function(require,module,exports){
 function createJobs (execlib) {
   'use strict';
   var mylib = {
-    question2function: require('./question2function')(execlib.lib)
+    question2function: require('./question2function')(execlib)
   };
 
   return mylib;
 }
 module.exports = createJobs;
-},{"./question2function":14}],13:[function(require,module,exports){
+},{"./question2function":15}],13:[function(require,module,exports){
 function createQuestion2FunctionJobBase (lib, mylib) {
   'use strict';
 
@@ -1139,20 +1139,76 @@ function createQuestion2FunctionJobBase (lib, mylib) {
 }
 module.exports = createQuestion2FunctionJobBase;
 },{}],14:[function(require,module,exports){
-function createQuestion2FunctionJobs (lib) {
+function createFormQuestion2FunctionJob (applib, lib, mylib) {
   'use strict';
 
+  var Question2FunctionJob = mylib.Question2Function;
+
+  function FormQuestion2FunctionJob (question, func, options, defer) {
+    Question2FunctionJob.call(this, question, func, defer);
+    this.uid = lib.uid();
+    this.mydivid = 'formdiv_'+this.uid;
+    this.options = options;
+    this.form = null;
+  }
+  lib.inherit(FormQuestion2FunctionJob, Question2FunctionJob);
+  FormQuestion2FunctionJob.prototype.destroy = function () {
+    if (this.form) {
+      this.form.destroy();
+    }
+    this.form = null;
+    this.options = null;
+    this.mydivid = null;
+    this.uid = null;
+    Question2FunctionJob.prototype.destroy.call(this);
+  };
+  FormQuestion2FunctionJob.prototype.title = function () {
+    return this.options.title;
+  }
+  FormQuestion2FunctionJob.prototype.createInput = function () {
+    lib.runNext(this.onInputCreated.bind(this));
+    return '<div id="'+this.mydivid+'" style="width:100%; height:100%"></div>';
+  };
+
+  FormQuestion2FunctionJob.prototype.onInputCreated = function () {
+    var options, ctor;
+    if (this.options.form.ctor) {
+      options = this.options.form.options || {};
+      options.force_dom_parent = '#'+this.mydivid;
+      options.actual = true;
+      applib.getElementType('BasicElement').createElement({
+        name: 'Form',
+        type: this.options.form.ctor,
+        options: options
+      }, this.onFormCreated.bind(this));
+    }
+  };
+  FormQuestion2FunctionJob.prototype.onFormCreated = function (form) {
+    this.form = form;
+  }
+
+
+  mylib.Form = FormQuestion2FunctionJob;
+}
+module.exports = createFormQuestion2FunctionJob;
+},{}],15:[function(require,module,exports){
+function createQuestion2FunctionJobs (execlib) {
+  'use strict';
+
+  var lib = execlib.lib,
+    applib = execlib.execSuite.libRegistry.get('allex_applib');
   var mylib = {mixins:{}};
   require('./basecreator')(lib, mylib);
   require('./predefinedcreator')(lib, mylib);
   require('./paramcreator')(lib, mylib);
   require('./simpleinputcreator')(lib, mylib);
+  require('./formcreator')(applib, lib, mylib);
 
   return mylib;
 
 }
 module.exports = createQuestion2FunctionJobs;
-},{"./basecreator":13,"./paramcreator":15,"./predefinedcreator":16,"./simpleinputcreator":17}],15:[function(require,module,exports){
+},{"./basecreator":13,"./formcreator":14,"./paramcreator":16,"./predefinedcreator":17,"./simpleinputcreator":18}],16:[function(require,module,exports){
 function createParamQuestion2FunctionJob (lib, mylib) {
   'use strict';
   var Question2FunctionJob = mylib.Question2Function;
@@ -1188,7 +1244,7 @@ function createParamQuestion2FunctionJob (lib, mylib) {
   mylib.Param = ParamQuestion2FunctionJob;
 }
 module.exports = createParamQuestion2FunctionJob;
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 function createQuestion2PredefinedFunctionJob (lib, mylib) {
   'use strict';
   var Question2FunctionJob = mylib.Question2Function;
@@ -1218,7 +1274,7 @@ function createQuestion2PredefinedFunctionJob (lib, mylib) {
 
 }
 module.exports = createQuestion2PredefinedFunctionJob;
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 function createSimpleInputQuestion2FunctionJob (lib, mylib) {
   'use strict';
 
@@ -1229,7 +1285,7 @@ function createSimpleInputQuestion2FunctionJob (lib, mylib) {
   }
   lib.inherit(SimpleInputParamQuestion2FunctionJob, ParamQuestion2FunctionJob);
   SimpleInputParamQuestion2FunctionJob.prototype.createInput = function () {
-    return '<'+this.inputType+' fixquestionelement="'+this.uid+'" value="'+(
+    return '<'+this.inputType+' class="form-control" fixquestionelement="'+this.uid+'" value="'+(
       this.initialInputValue()
     )+'"/>';
   };
@@ -1260,13 +1316,13 @@ function createSimpleInputQuestion2FunctionJob (lib, mylib) {
   }
   lib.inherit(SimpleTextAreaParamQuestion2FunctionJob, ParamQuestion2FunctionJob);
   SimpleTextAreaParamQuestion2FunctionJob.prototype.createInput = function () {
-    return '<textarea fixquestionelement="'+this.uid+'">'+this.initialInputValue()+'</textarea>';
+    return '<textarea class="form-control" fixquestionelement="'+this.uid+'">'+this.initialInputValue()+'</textarea>';
   };
   mylib.SimpleTextArea = SimpleTextAreaParamQuestion2FunctionJob;
 
 }
 module.exports = createSimpleInputQuestion2FunctionJob;
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 function createMarkups (execlib) {
   'use strict';
   var lib = execlib.lib,
@@ -1283,7 +1339,7 @@ function createMarkups (execlib) {
   return mylib;
 }
 module.exports = createMarkups;
-},{"./modal":19,"./question":20,"./toasts":21}],19:[function(require,module,exports){
+},{"./modal":20,"./question":21,"./toasts":22}],20:[function(require,module,exports){
 function createModalMarkups(lib, o, m, mylib) {
   'use strict';
 
@@ -1333,7 +1389,7 @@ function createModalMarkups(lib, o, m, mylib) {
   mylib.modalMarkup = modalMarkup;
 }
 module.exports = createModalMarkups;
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 function createQuestionMarkups (lib, o, m, mylib) {
   'use strict';
 
@@ -1361,7 +1417,7 @@ function createQuestionMarkups (lib, o, m, mylib) {
   mylib.questionButtonsCreator = questionButtonsCreator;
 }
 module.exports = createQuestionMarkups;
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 function createToastsMarkup (lib, o, m, s, mylib) {
   'use strict';
 

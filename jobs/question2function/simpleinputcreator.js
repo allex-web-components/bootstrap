@@ -8,7 +8,7 @@ function createSimpleInputQuestion2FunctionJob (lib, mylib) {
   }
   lib.inherit(SimpleInputParamQuestion2FunctionJob, ParamQuestion2FunctionJob);
   SimpleInputParamQuestion2FunctionJob.prototype.createInput = function () {
-    return '<'+this.inputType+' fixquestionelement="'+this.uid+'" value="'+(
+    return '<'+this.inputType+' class="form-control" fixquestionelement="'+this.uid+'" value="'+(
       this.initialInputValue()
     )+'"/>';
   };
@@ -39,7 +39,7 @@ function createSimpleInputQuestion2FunctionJob (lib, mylib) {
   }
   lib.inherit(SimpleTextAreaParamQuestion2FunctionJob, ParamQuestion2FunctionJob);
   SimpleTextAreaParamQuestion2FunctionJob.prototype.createInput = function () {
-    return '<textarea fixquestionelement="'+this.uid+'">'+this.initialInputValue()+'</textarea>';
+    return '<textarea class="form-control" fixquestionelement="'+this.uid+'">'+this.initialInputValue()+'</textarea>';
   };
   mylib.SimpleTextArea = SimpleTextAreaParamQuestion2FunctionJob;
 
