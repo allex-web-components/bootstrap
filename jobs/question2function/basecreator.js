@@ -33,6 +33,7 @@ function createQuestion2FunctionJobBase (lib, mylib) {
       return;
     }
     if (!res) {
+      this.notify({skipping_function: true});
       this.resolve(false);
       return;
     }

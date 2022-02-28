@@ -9,7 +9,7 @@ function createCustomSelect (execlib, applib, mylib) {
   
   function CustomSelectElement (id, options) {
     TextInputWithListElement.call(this, id, options);
-    this.options = null;
+    this.options = (options && lib.isArray(options.options)) ? options.options : null;
     this.selectedValue = null;
     this.selectedRawItem = null;
     this.optionMap = new lib.Map();
@@ -136,6 +136,9 @@ function createCustomSelect (execlib, applib, mylib) {
     this.$element.on('blur', this.onBlurer);
     this.$element.on('keydown', this.onKeyDowner);
     this.$element.on('keyup', this.onKeyUper);
+    if (this.options) {
+      this.set('options', this.options.slice());
+    }
   };
   CustomSelectElement.prototype.onDropDownShow = function (evntignored) {
     this.listContainer.width(this.$element.outerWidth());
@@ -437,8 +440,19 @@ function createModalElement (lib, applib) {
     }
   };
   BSModalDiv.prototype.fixZIndex = function (zindex) {
-    var bd = jQuery('.modal-backdrop').not('.modal-stack').css('z-index', zindex-1),
+    var bd = jQuery('.modal-backdrop').not('.modal-stack'),
       bdcss = this.getConfigVal('modal_backdrop_class');
+    
+    if (bd.length<1) {
+      var bdz = 1049;
+      jQuery('.modal-backdrop').each(function (index, mbd){
+        jQuery(mbd).css('z-index', bdz);
+        bdz++;
+      })
+      bdz = null;
+      return;
+    }
+    bd.css('z-index', zindex-1);
     bd.addClass('modal-stack');
     if (!bdcss) {
       return;
@@ -578,10 +592,10 @@ function createPopups(execlib, applib, mylib) {
   PopUpElement.prototype.setQuestionInstance = function (inst) {
     this.questionInstance = inst;
   };
-  PopUpElement.prototype.createIntegrationEnvironmentDescriptor = function (myname) {
+  PopUpElement.prototype.actualEnvironmentDescriptor = function (myname) {
     var cq = this.getConfigVal('closequestion');
     if (!(cq && cq.path)) {
-      return BSModalDivElement.prototype.createIntegrationEnvironmentDescriptor.call(this, myname);
+      return BSModalDivElement.prototype.actualEnvironmentDescriptor.call(this, myname);
     }
     return {
       logic: [{
@@ -785,7 +799,7 @@ function createServerLookup (execlib, applib, mylib) {
     return ret;
   };
 
-  ServerLookupElement.prototype.createIntegrationEnvironmentDescriptor = function (myname) {
+  ServerLookupElement.prototype.actualEnvironmentDescriptor = function (myname) {
     var funcname = this.serverLookupFuncName();
     return {
       preprocessors: {
@@ -1129,6 +1143,7 @@ function createQuestion2FunctionJobBase (lib, mylib) {
       return;
     }
     if (!res) {
+      this.notify({skipping_function: true});
       this.resolve(false);
       return;
     }
@@ -1142,14 +1157,48 @@ module.exports = createQuestion2FunctionJobBase;
 function createFormQuestion2FunctionJob (applib, lib, mylib) {
   'use strict';
 
+  var WebElement = applib.getElementType('WebElement');
+  function QuestionFormHolderElement(id, options) {
+    WebElement.call(this, id, options);
+    this.ok = null;
+  }
+  lib.inherit(QuestionFormHolderElement, WebElement);
+  QuestionFormHolderElement.prototype.__cleanUp = function () {
+    this.ok = null;
+    WebElement.prototype.__cleanUp.call(this);
+  };
+  QuestionFormHolderElement.prototype.actualEnvironmentDescriptor = function (myname) {
+    return {
+      logic: [{
+        triggers: 'element.'+myname+'.Form:valid',
+        handler: this.onFormValid.bind(this)
+      }]
+    }
+  };
+
+  QuestionFormHolderElement.prototype.onFormValid = function (valid) {
+    if (!this.ok) {
+      return;
+    }
+    this.ok.attr('disabled', !valid);
+  }
+  QuestionFormHolderElement.prototype.prepareHolder = function () {
+    this.ok = this.$element.parents('.modal-content').find('[questionbutton="Yes"]');
+  };
+
+  QuestionFormHolderElement.prototype.postInitializationMethodNames = WebElement.prototype.postInitializationMethodNames.concat('prepareHolder');
+
+  applib.registerElementType('QuestionFormHolder', QuestionFormHolderElement);
+
   var Question2FunctionJob = mylib.Question2Function;
 
   function FormQuestion2FunctionJob (question, func, options, defer) {
     Question2FunctionJob.call(this, question, func, defer);
     this.uid = lib.uid();
     this.mydivid = 'formdiv_'+this.uid;
-    this.options = options;
+    this.options = options || {};
     this.form = null;
+    this.options.form = this.options.form || {};
   }
   lib.inherit(FormQuestion2FunctionJob, Question2FunctionJob);
   FormQuestion2FunctionJob.prototype.destroy = function () {
@@ -1169,18 +1218,33 @@ function createFormQuestion2FunctionJob (applib, lib, mylib) {
     lib.runNext(this.onInputCreated.bind(this));
     return '<div id="'+this.mydivid+'" style="width:100%; height:100%"></div>';
   };
+  FormQuestion2FunctionJob.prototype.argumentArrayForFunction = function () {
+    var val = this.destroyable.getElement(this.mydivid+'.Form').get('value');
+    return [lib.extend(this.options.hash, val)];
+  };
 
   FormQuestion2FunctionJob.prototype.onInputCreated = function () {
     var options, ctor;
+    if (!this.okToProceed()) {
+      return;
+    }
     if (this.options.form.ctor) {
       options = this.options.form.options || {};
       options.force_dom_parent = '#'+this.mydivid;
       options.actual = true;
-      applib.getElementType('BasicElement').createElement({
-        name: 'Form',
-        type: this.options.form.ctor,
-        options: options
-      }, this.onFormCreated.bind(this));
+      this.destroyable.createElement({
+        name: this.mydivid,
+        type: 'QuestionFormHolder',
+        options: {
+          actual: true,
+          self_selector: '#',
+          elements: [{
+            name: 'Form',
+            type: this.options.form.ctor,
+            options: options
+          }]
+        }
+      });
     }
   };
   FormQuestion2FunctionJob.prototype.onFormCreated = function (form) {
@@ -1405,7 +1469,7 @@ function createQuestionMarkups (lib, o, m, mylib) {
 
   function questionButtonsCreator (buttondescriptors) {
     return buttondescriptors.map(function (butdesc) {
-      return o(m.div,
+      return o(m.button,
         'CLASS', lib.joinStringsWith('btn', butdesc.class, butdesc.primary? 'btn-primary' : 'btn-secondary', ' '),
         'ATTRS', lib.joinStringsWith('type="button"', butdesc.attrs, butdesc.closer ? 'data-bs-dismiss="modal"' : '', ' '),
         'CONTENTS', butdesc.caption

@@ -81,8 +81,19 @@ function createModalElement (lib, applib) {
     }
   };
   BSModalDiv.prototype.fixZIndex = function (zindex) {
-    var bd = jQuery('.modal-backdrop').not('.modal-stack').css('z-index', zindex-1),
+    var bd = jQuery('.modal-backdrop').not('.modal-stack'),
       bdcss = this.getConfigVal('modal_backdrop_class');
+    
+    if (bd.length<1) {
+      var bdz = 1049;
+      jQuery('.modal-backdrop').each(function (index, mbd){
+        jQuery(mbd).css('z-index', bdz);
+        bdz++;
+      })
+      bdz = null;
+      return;
+    }
+    bd.css('z-index', zindex-1);
     bd.addClass('modal-stack');
     if (!bdcss) {
       return;

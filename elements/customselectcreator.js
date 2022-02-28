@@ -8,7 +8,7 @@ function createCustomSelect (execlib, applib, mylib) {
   
   function CustomSelectElement (id, options) {
     TextInputWithListElement.call(this, id, options);
-    this.options = null;
+    this.options = (options && lib.isArray(options.options)) ? options.options : null;
     this.selectedValue = null;
     this.selectedRawItem = null;
     this.optionMap = new lib.Map();
@@ -135,6 +135,9 @@ function createCustomSelect (execlib, applib, mylib) {
     this.$element.on('blur', this.onBlurer);
     this.$element.on('keydown', this.onKeyDowner);
     this.$element.on('keyup', this.onKeyUper);
+    if (this.options) {
+      this.set('options', this.options.slice());
+    }
   };
   CustomSelectElement.prototype.onDropDownShow = function (evntignored) {
     this.listContainer.width(this.$element.outerWidth());

@@ -13,7 +13,7 @@ function createQuestionMarkups (lib, o, m, mylib) {
 
   function questionButtonsCreator (buttondescriptors) {
     return buttondescriptors.map(function (butdesc) {
-      return o(m.div,
+      return o(m.button,
         'CLASS', lib.joinStringsWith('btn', butdesc.class, butdesc.primary? 'btn-primary' : 'btn-secondary', ' '),
         'ATTRS', lib.joinStringsWith('type="button"', butdesc.attrs, butdesc.closer ? 'data-bs-dismiss="modal"' : '', ' '),
         'CONTENTS', butdesc.caption

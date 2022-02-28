@@ -38,7 +38,7 @@ function createServerLookup (execlib, applib, mylib) {
     return ret;
   };
 
-  ServerLookupElement.prototype.createIntegrationEnvironmentDescriptor = function (myname) {
+  ServerLookupElement.prototype.actualEnvironmentDescriptor = function (myname) {
     var funcname = this.serverLookupFuncName();
     return {
       preprocessors: {

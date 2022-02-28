@@ -90,10 +90,10 @@ function createPopups(execlib, applib, mylib) {
   PopUpElement.prototype.setQuestionInstance = function (inst) {
     this.questionInstance = inst;
   };
-  PopUpElement.prototype.createIntegrationEnvironmentDescriptor = function (myname) {
+  PopUpElement.prototype.actualEnvironmentDescriptor = function (myname) {
     var cq = this.getConfigVal('closequestion');
     if (!(cq && cq.path)) {
-      return BSModalDivElement.prototype.createIntegrationEnvironmentDescriptor.call(this, myname);
+      return BSModalDivElement.prototype.actualEnvironmentDescriptor.call(this, myname);
     }
     return {
       logic: [{
