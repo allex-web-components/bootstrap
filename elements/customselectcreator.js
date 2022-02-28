@@ -118,6 +118,9 @@ function createCustomSelect (execlib, applib, mylib) {
     return true;
   };
   CustomSelectElement.prototype.set_selectedValue = function (selval) {
+    if (!this.$element) {
+      return;
+    }
     this.selectedValue = selval;
     this.$element.val('');
     this.chooseItem({

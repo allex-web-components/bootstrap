@@ -79,6 +79,9 @@ function createTextInputWithList (execlib, applib, mylib) {
   TextInputWithListElement.prototype.processTextInput = function (val) {};
 
   TextInputWithListElement.prototype.fillList = function (rawitems) {
+    if (!this.dropdown) {
+      return;
+    }
     this.clearList();
     this.dropdown.hide();
     (lib.isArray(rawitems) ? rawitems : []).forEach(this.optionProducer.bind(this));

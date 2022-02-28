@@ -119,6 +119,9 @@ function createCustomSelect (execlib, applib, mylib) {
     return true;
   };
   CustomSelectElement.prototype.set_selectedValue = function (selval) {
+    if (!this.$element) {
+      return;
+    }
     this.selectedValue = selval;
     this.$element.val('');
     this.chooseItem({
@@ -928,6 +931,9 @@ function createTextInputWithList (execlib, applib, mylib) {
   TextInputWithListElement.prototype.processTextInput = function (val) {};
 
   TextInputWithListElement.prototype.fillList = function (rawitems) {
+    if (!this.dropdown) {
+      return;
+    }
     this.clearList();
     this.dropdown.hide();
     (lib.isArray(rawitems) ? rawitems : []).forEach(this.optionProducer.bind(this));
