@@ -9,7 +9,7 @@ function createCustomSelect (execlib, applib, mylib) {
   function CustomSelectElement (id, options) {
     TextInputWithListElement.call(this, id, options);
     this.options = (options && lib.isArray(options.options)) ? options.options : null;
-    this.selectedValue = null;
+    this.value = null;
     this.selectedRawItem = null;
     this.optionMap = new lib.Map();
     this.onDropDownShower = this.onDropDownShow.bind(this);
@@ -46,9 +46,15 @@ function createCustomSelect (execlib, applib, mylib) {
     }
     this.optionMap = null;
     this.selectedRawItem = null;
-    this.selectedValue = null;
+    this.value = null;
     this.options = null;
     TextInputWithListElement.prototype.__cleanUp.call(this);
+  };
+  CustomSelectElement.prototype.set_htmlvalue = function (val) {
+    return TextInputWithListElement.prototype.set_value.call(this, val);
+  };
+  CustomSelectElement.prototype.get_htmlvalue = function () {
+    return TextInputWithListElement.prototype.get_value.call(this);
   };
   CustomSelectElement.prototype.rawItemToText = function (rawitem) {
     var titlefields, titlepath, titlejoiner, ret;
@@ -71,7 +77,7 @@ function createCustomSelect (execlib, applib, mylib) {
   };
   CustomSelectElement.prototype.rawDataToTextInputValue = function (rawitem) {
     this.selectedRawItem = rawitem;
-    this.set('selectedValue', valueOfData(rawitem, this.getConfigVal('valuepath'), ''));
+    this.set('value', valueOfData(rawitem, this.getConfigVal('valuepath'), ''));
     return this.rawItemToText(rawitem);
   };
   CustomSelectElement.prototype.chooseItem = function (evnt) {
@@ -81,15 +87,20 @@ function createCustomSelect (execlib, applib, mylib) {
     }
   };
   CustomSelectElement.prototype.makeUseOfProducedOption = function (li, rawitem) {
-    var id = lib.uid();
-    li.text(this.rawItemToText(rawitem));
+    var id = lib.uid(), txt, val;
+    txt = this.rawItemToText(rawitem);
+    val = valueOfData(rawitem, this.getConfigVal('valuepath'));
+    li.text(txt);
     li.attr('data', JSON.stringify(id));
     this.optionMap.add(id, {
       li: li,
       data: rawitem,
-      value: valueOfData(rawitem, this.getConfigVal('valuepath'))
+      value: val
     });
     this.list.append(li);
+    if (this.get('value') == val) {
+      this.set('htmlvalue', txt);
+    }
   };
   CustomSelectElement.prototype.makeUseOfChosenItemData = function (data) {
     //data is actually id
@@ -100,7 +111,7 @@ function createCustomSelect (execlib, applib, mylib) {
     if (!optdata) {
       return;
     }
-    this.set('value', this.rawDataToTextInputValue(optdata.data));
+    this.set('htmlvalue', this.rawDataToTextInputValue(optdata.data));
   };
   CustomSelectElement.prototype.chooseItem = function (evnt) {
     return TextInputWithListElement.prototype.chooseItem.call(this, evnt);
@@ -112,19 +123,22 @@ function createCustomSelect (execlib, applib, mylib) {
     }
     this.options = options;
     this.fillList(options);
-    if (lib.isArray(options) && options.length>0) {
-      this.set('selectedValue', valueOfData(options[0], this.getConfigVal('valuepath')));
+    if (!this.get('value') && lib.isArray(options) && options.length>0) {
+      this.set('value', valueOfData(options[0], this.getConfigVal('valuepath')));
     }
     return true;
   };
-  CustomSelectElement.prototype.set_selectedValue = function (selval) {
+  CustomSelectElement.prototype.get_value = function () {
+    return this.value;
+  };
+  CustomSelectElement.prototype.set_value = function (selval) {
     if (!this.$element) {
       return;
     }
-    this.selectedValue = selval;
+    this.value = selval;
     this.$element.val('');
     this.chooseItem({
-      target: this.optionThatCorrespondsToValue(this.selectedValue)
+      target: this.optionThatCorrespondsToValue(this.value)
     });
     return true;
   };
@@ -146,7 +160,7 @@ function createCustomSelect (execlib, applib, mylib) {
     this.listContainer.width(this.$element.outerWidth());
   };
   CustomSelectElement.prototype.onDropDownShown = function (evntignored) {
-    var chosen = this.optionThatCorrespondsToValue(this.selectedValue);
+    var chosen = this.optionThatCorrespondsToValue(this.value);
     if (chosen) {
       this.scrollInChosenElement(chosen);
     }
@@ -183,8 +197,8 @@ function createCustomSelect (execlib, applib, mylib) {
         switch (evnt.originalEvent.key) {
           case 'Enter':
             this.showAllOptions();
-            this.$element.val(this.textThatCorrespondsToValue(this.get('selectedValue')));
-            this.scrollInChosenElement(this.optionThatCorrespondsToValue(this.get('selectedValue')));
+            this.$element.val(this.textThatCorrespondsToValue(this.get('value')));
+            this.scrollInChosenElement(this.optionThatCorrespondsToValue(this.get('value')));
             this.$element.select();
             return false;
           case 'Backspace':
