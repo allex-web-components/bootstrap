@@ -880,6 +880,54 @@ function createTextInputWithList (execlib, applib, mylib) {
     o = templateslib.override,
     m = htmltemplateslib;
 
+  var _MAX_ITEMS_TO_FILLIN_ASYC = 5;
+  var qlib = lib.qlib,
+    JobOnDestroyable = qlib.JobOnDestroyable;
+
+  function ListFillerJob (elem, rawitems, start, defer) {
+    JobOnDestroyable.call(this, elem, defer);
+    this.rawItems = rawitems;
+    this.currentIndex = start-1;
+  }
+  lib.inherit(ListFillerJob, JobOnDestroyable);
+  ListFillerJob.prototype.destroy = function () {
+    this.currentIndex = null;
+    this.rawItems = null;
+    JobOnDestroyable.prototype.destroy.call(this);
+  };
+  ListFillerJob.prototype.go = function () {
+    var ok = this.okToGo();
+    if (!ok.ok) {
+      return ok.val;
+    }
+    lib.runNext(this.fillOne.bind(this));
+    return ok.val;
+  };
+  ListFillerJob.prototype.fillOne = function () {
+    if (!this.okToProceed()) {
+      return;
+    }
+    if (!lib.isNumber(this.currentIndex)) {
+      this.resolve(0);
+      return;
+    }
+    if (!lib.isArray(this.rawItems)) {
+      this.resolve(0);
+      return;
+    }
+    if (this.rawItems != this.destroyable.rawItemsToFillIn) {
+      this.resolve(this.currentIndex);
+      return;
+    }
+    this.currentIndex++;
+    if (this.currentIndex >= this.rawItems.length) {
+      this.resolve(this.currentIndex);
+      return;
+    }
+    this.destroyable.optionProducer(this.rawItems[this.currentIndex]);
+    lib.runNext(this.fillOne.bind(this));
+  };
+
   function createMarkup (options) {
     return o(m.textinput);
   }
@@ -893,12 +941,14 @@ function createTextInputWithList (execlib, applib, mylib) {
     this.dropdown = null;
     this.listContainer = null;
     this.list = null;
+    this.rawItemsToFillIn = null;
     this.itemChooser = this.chooseItem.bind(this);
   }
   lib.inherit(TextInputWithListElement, WebElement);
   DataHolderMixin.addMethods(TextInputWithListElement);
   TextInputWithListElement.prototype.__cleanUp = function () {
     this.itemChooser = null;
+    this.rawItemsToFillIn = null;
     this.list = null;
     this.listContainer = null;
     if (this.dropdown) {
@@ -950,8 +1000,23 @@ function createTextInputWithList (execlib, applib, mylib) {
     }
     this.clearList();
     this.dropdown.hide();
-    (lib.isArray(rawitems) ? rawitems : []).forEach(this.optionProducer.bind(this));
+    listFiller.call(this, (lib.isArray(rawitems) ? rawitems : []));
+    //(lib.isArray(rawitems) ? rawitems : []).forEach(this.optionProducer.bind(this)); //dangerously slow for a lot of rawitems
   };
+  //static
+  function listFiller (items) {
+    var i, item, top;
+    top = items.length;
+    this.rawItemsToFillIn = items;
+    if (top>_MAX_ITEMS_TO_FILLIN_ASYC) {
+      top = _MAX_ITEMS_TO_FILLIN_ASYC;
+    }
+    for (i=0; i<top; i++) {
+      this.optionProducer(items[i]);
+    }
+    this.jobs.run('.', new ListFillerJob(this, items, i));
+  }
+  //static end
   TextInputWithListElement.prototype.optionProducer = function (rawitem) {
     var li = jQuery('<li>');
     //console.log('proposal', prop);
