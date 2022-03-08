@@ -4,6 +4,7 @@ function createElements (execlib, applib, mylib) {
   require('./modalcreator')(execlib.lib, applib);
   require('./datamodalcreator')(execlib.lib, applib);
 	require('./modalformcreator')(execlib, applib);
+  require('./offcanvascreator')(execlib.lib, applib);
 	require('./popupcreator')(execlib, applib, mylib);
 	require('./questioncreator')(execlib, applib, mylib);
 	require('./textinputwithlistcreator')(execlib, applib, mylib);

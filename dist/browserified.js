@@ -364,6 +364,7 @@ function createElements (execlib, applib, mylib) {
   require('./modalcreator')(execlib.lib, applib);
   require('./datamodalcreator')(execlib.lib, applib);
 	require('./modalformcreator')(execlib, applib);
+  require('./offcanvascreator')(execlib.lib, applib);
 	require('./popupcreator')(execlib, applib, mylib);
 	require('./questioncreator')(execlib, applib, mylib);
 	require('./textinputwithlistcreator')(execlib, applib, mylib);
@@ -373,7 +374,7 @@ function createElements (execlib, applib, mylib) {
 }
 module.exports = createElements;
 
-},{"./customselectcreator":1,"./datamodalcreator":2,"./modalcreator":4,"./modalformcreator":5,"./popupcreator":6,"./questioncreator":7,"./serverlookupcreator":8,"./textinputwithlistcreator":9,"./toastscreator":10}],4:[function(require,module,exports){
+},{"./customselectcreator":1,"./datamodalcreator":2,"./modalcreator":4,"./modalformcreator":5,"./offcanvascreator":6,"./popupcreator":7,"./questioncreator":8,"./serverlookupcreator":9,"./textinputwithlistcreator":10,"./toastscreator":11}],4:[function(require,module,exports){
 function createModalElement (lib, applib) {
   'use strict';
 
@@ -517,6 +518,38 @@ function createModalFormElement (execlib, applib) {
 module.exports = createModalFormElement;
 
 },{}],6:[function(require,module,exports){
+function createOffCanvasElement (lib, applib) {
+  'use strict';
+
+  var DivElement = applib.getElementType('DivElement');
+
+  function OffCanvasElement (id, options) {
+    DivElement.call(this, id, options);
+  }
+  lib.inherit(OffCanvasElement, DivElement);
+
+  OffCanvasElement.prototype.hookToOffScreen = function () {
+    if (!this.$element.hasClass('offcanvas')) {
+      this.$element.addClass('offcanvas');
+    }
+    this.$element.on('show.bs.offcanvas', this.onShowOffCanvas.bind(this));
+    this.$element.on('hidden.bs.offcanvas', this.onHiddenOffCanvas.bind(this));
+  };
+
+  OffCanvasElement.prototype.onShowOffCanvas = function () {
+    this.set('actual', true);
+  };
+  OffCanvasElement.prototype.onHiddenOffCanvas = function () {
+    this.set('actual', false);
+  };
+
+  OffCanvasElement.prototype.postInitializationMethodNames = 
+    DivElement.prototype.postInitializationMethodNames.concat(['hookToOffScreen']);
+
+  applib.registerElementType('OffCanvasElement', OffCanvasElement);
+}
+module.exports = createOffCanvasElement;
+},{}],7:[function(require,module,exports){
 function createPopups(execlib, applib, mylib) {
   'use strict';
   var lib = execlib.lib,
@@ -662,7 +695,7 @@ function createPopups(execlib, applib, mylib) {
 }
 module.exports = createPopups;
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 function createQuestion(execlib, applib, mylib) {
   'use strict';
 
@@ -775,7 +808,7 @@ function createQuestion(execlib, applib, mylib) {
 }
 module.exports = createQuestion;
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 function createServerLookup (execlib, applib, mylib) {
   'use strict';
 
@@ -863,7 +896,7 @@ function createServerLookup (execlib, applib, mylib) {
   applib.registerElementType('ServerLookup', ServerLookupElement);
 }
 module.exports = createServerLookup;
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 function createTextInputWithList (execlib, applib, mylib) {
   'use strict';
 
@@ -1078,7 +1111,7 @@ function createTextInputWithList (execlib, applib, mylib) {
 
 }
 module.exports = createTextInputWithList;
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 function createToast (execlib, applib, mylib) {
   'use strict';
   var lib = execlib.lib,
@@ -1168,7 +1201,7 @@ function createToast (execlib, applib, mylib) {
   applib.registerElementType('Toast', ToastElement);
 }
 module.exports = createToast;
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 (function (execlib) {
   var lib = execlib.lib,
     lR = execlib.execSuite.libRegistry,
@@ -1182,7 +1215,7 @@ module.exports = createToast;
   lR.register('allex_bootstrapwebcomponent', mylib);
 })(ALLEX)
 
-},{"./elements":3,"./jobs":12,"./markup":19}],12:[function(require,module,exports){
+},{"./elements":3,"./jobs":13,"./markup":20}],13:[function(require,module,exports){
 function createJobs (execlib) {
   'use strict';
   var mylib = {
@@ -1192,7 +1225,7 @@ function createJobs (execlib) {
   return mylib;
 }
 module.exports = createJobs;
-},{"./question2function":15}],13:[function(require,module,exports){
+},{"./question2function":16}],14:[function(require,module,exports){
 function createQuestion2FunctionJobBase (lib, mylib) {
   'use strict';
 
@@ -1238,7 +1271,7 @@ function createQuestion2FunctionJobBase (lib, mylib) {
   mylib.Question2Function = Question2FunctionJob;
 }
 module.exports = createQuestion2FunctionJobBase;
-},{}],14:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 function createFormQuestion2FunctionJob (applib, lib, mylib) {
   'use strict';
 
@@ -1340,7 +1373,7 @@ function createFormQuestion2FunctionJob (applib, lib, mylib) {
   mylib.Form = FormQuestion2FunctionJob;
 }
 module.exports = createFormQuestion2FunctionJob;
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 function createQuestion2FunctionJobs (execlib) {
   'use strict';
 
@@ -1357,7 +1390,7 @@ function createQuestion2FunctionJobs (execlib) {
 
 }
 module.exports = createQuestion2FunctionJobs;
-},{"./basecreator":13,"./formcreator":14,"./paramcreator":16,"./predefinedcreator":17,"./simpleinputcreator":18}],16:[function(require,module,exports){
+},{"./basecreator":14,"./formcreator":15,"./paramcreator":17,"./predefinedcreator":18,"./simpleinputcreator":19}],17:[function(require,module,exports){
 function createParamQuestion2FunctionJob (lib, mylib) {
   'use strict';
   var Question2FunctionJob = mylib.Question2Function;
@@ -1393,7 +1426,7 @@ function createParamQuestion2FunctionJob (lib, mylib) {
   mylib.Param = ParamQuestion2FunctionJob;
 }
 module.exports = createParamQuestion2FunctionJob;
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 function createQuestion2PredefinedFunctionJob (lib, mylib) {
   'use strict';
   var Question2FunctionJob = mylib.Question2Function;
@@ -1423,7 +1456,7 @@ function createQuestion2PredefinedFunctionJob (lib, mylib) {
 
 }
 module.exports = createQuestion2PredefinedFunctionJob;
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 function createSimpleInputQuestion2FunctionJob (lib, mylib) {
   'use strict';
 
@@ -1471,7 +1504,7 @@ function createSimpleInputQuestion2FunctionJob (lib, mylib) {
 
 }
 module.exports = createSimpleInputQuestion2FunctionJob;
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 function createMarkups (execlib) {
   'use strict';
   var lib = execlib.lib,
@@ -1488,7 +1521,7 @@ function createMarkups (execlib) {
   return mylib;
 }
 module.exports = createMarkups;
-},{"./modal":20,"./question":21,"./toasts":22}],20:[function(require,module,exports){
+},{"./modal":21,"./question":22,"./toasts":23}],21:[function(require,module,exports){
 function createModalMarkups(lib, o, m, mylib) {
   'use strict';
 
@@ -1538,7 +1571,7 @@ function createModalMarkups(lib, o, m, mylib) {
   mylib.modalMarkup = modalMarkup;
 }
 module.exports = createModalMarkups;
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 function createQuestionMarkups (lib, o, m, mylib) {
   'use strict';
 
@@ -1566,7 +1599,7 @@ function createQuestionMarkups (lib, o, m, mylib) {
   mylib.questionButtonsCreator = questionButtonsCreator;
 }
 module.exports = createQuestionMarkups;
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 function createToastsMarkup (lib, o, m, s, mylib) {
   'use strict';
 
@@ -1665,4 +1698,4 @@ function createToastsMarkup (lib, o, m, s, mylib) {
   mylib.toastsSubContainer = toastsSubContainer;
 }
 module.exports = createToastsMarkup;
-},{}]},{},[11]);
+},{}]},{},[12]);
