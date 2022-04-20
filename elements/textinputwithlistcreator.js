@@ -137,6 +137,7 @@ function createTextInputWithList (execlib, applib, mylib) {
     listFiller.call(this, (lib.isArray(rawitems) ? rawitems : []));
     //(lib.isArray(rawitems) ? rawitems : []).forEach(this.optionProducer.bind(this)); //dangerously slow for a lot of rawitems
   };
+  TextInputWithListElement.prototype.onListFilled = function () {  };
   //static
   function listFiller (items) {
     var i, item, top;
@@ -148,7 +149,7 @@ function createTextInputWithList (execlib, applib, mylib) {
     for (i=0; i<top; i++) {
       this.optionProducer(items[i]);
     }
-    this.jobs.run('.', new ListFillerJob(this, items, i));
+    this.jobs.run('.', new ListFillerJob(this, items, i)).then(this.onListFilled.bind(this));
   }
   //static end
   TextInputWithListElement.prototype.optionProducer = function (rawitem) {

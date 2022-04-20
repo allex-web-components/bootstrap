@@ -11,6 +11,7 @@ function createCustomSelect (execlib, applib, mylib) {
     this.options = (options && lib.isArray(options.options)) ? options.options : null;
     this.value = null;
     this.selectedRawItem = null;
+    this.itemFoundFromExistingValue = null;
     this.optionMap = new lib.Map();
     this.onDropDownShower = this.onDropDownShow.bind(this);
     this.onDropDownShowner = this.onDropDownShown.bind(this);
@@ -45,6 +46,7 @@ function createCustomSelect (execlib, applib, mylib) {
       this.optionMap.destroy();
     }
     this.optionMap = null;
+    this.itemFoundFromExistingValue = null;
     this.selectedRawItem = null;
     this.value = null;
     this.options = null;
@@ -87,18 +89,20 @@ function createCustomSelect (execlib, applib, mylib) {
     }
   };
   CustomSelectElement.prototype.makeUseOfProducedOption = function (li, rawitem) {
-    var id = lib.uid(), txt, val;
+    var id = lib.uid(), txt, val, option;
     txt = this.rawItemToText(rawitem);
     val = valueOfData(rawitem, this.getConfigVal('valuepath'));
     li.text(txt);
     li.attr('data', JSON.stringify(id));
-    this.optionMap.add(id, {
+    option = {
       li: li,
       data: rawitem,
       value: val
-    });
+    };
+    this.optionMap.add(id, option);
     this.list.append(li);
     if (this.get('value') == val) {
+      this.itemFoundFromExistingValue = option;
       this.set('htmlvalue', txt);
     }
   };
@@ -116,17 +120,38 @@ function createCustomSelect (execlib, applib, mylib) {
   CustomSelectElement.prototype.chooseItem = function (evnt) {
     return TextInputWithListElement.prototype.chooseItem.call(this, evnt);
   };
+  CustomSelectElement.prototype.onListFilled = function () {
+    var options;
+    if (!this.itemFoundFromExistingValue) {
+      //console.log('item not found from', this.get('options'));
+      options = this.get('options');
+      if (lib.isArray(options) && options.length>0) {
+        this.set('value', valueOfData(options[0], this.getConfigVal('valuepath')));
+      }
+    }
+  };
 
   CustomSelectElement.prototype.set_options = function (options) {
+    var val;
     if (this.optionMap) {
       this.optionMap.purge();
     }
     this.options = options;
+    this.itemFoundFromExistingValue = null;
     this.fillList(options);
-    if (!this.get('value') && lib.isArray(options) && options.length>0) {
-      this.set('value', valueOfData(options[0], this.getConfigVal('valuepath')));
-    }
     return true;
+    /*
+    val = this.get('value');
+    if (!lib.isVal(val)) {
+      if (lib.isArray(options) && options.length>0) {
+        this.set('value', valueOfData(options[0], this.getConfigVal('valuepath')));
+      }
+      return true;
+    }
+    console.log('now what with existing value?', val);
+    console.log('with options', options);
+    return true;
+    */
   };
   CustomSelectElement.prototype.get_value = function () {
     return this.value;
