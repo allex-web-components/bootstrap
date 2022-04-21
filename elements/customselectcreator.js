@@ -140,18 +140,6 @@ function createCustomSelect (execlib, applib, mylib) {
     this.itemFoundFromExistingValue = null;
     this.fillList(options);
     return true;
-    /*
-    val = this.get('value');
-    if (!lib.isVal(val)) {
-      if (lib.isArray(options) && options.length>0) {
-        this.set('value', valueOfData(options[0], this.getConfigVal('valuepath')));
-      }
-      return true;
-    }
-    console.log('now what with existing value?', val);
-    console.log('with options', options);
-    return true;
-    */
   };
   CustomSelectElement.prototype.get_value = function () {
     return this.value;
