@@ -20,11 +20,17 @@ function createModalMarkups(lib, o, m, mylib) {
                   'ATTRS', 'popupelement="Title"',
                   'CONTENTS', (options.title || 'Title')
                 ),
-                o(m.button,
-                  'CLASS', 'btn-close',
-                  'ATTRS', 'type="button" '+
-                    (options.nodefaultclose ? '' : 'data-bs-dismiss="modal"')+
-                    ' aria-label="'+(options.closecaption || 'Close')+'" popupelement="Close"'
+                (
+                  options.nodefaultclose 
+                  ? 
+                  '' 
+                  :
+                  o(m.button,
+                    'CLASS', 'btn-close',
+                    'ATTRS', 'type="button" '+
+                      (options.nodefaultclose ? '' : 'data-bs-dismiss="modal"')+
+                      ' aria-label="'+(options.closecaption || 'Close')+'" popupelement="Close"'
+                  )
                 )
               ]
             ),
