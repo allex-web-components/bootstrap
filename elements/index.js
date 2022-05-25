@@ -1,7 +1,7 @@
 function createElements (execlib, applib, mylib) {
   'use strict';
 
-  require('./modalcreator')(execlib.lib, applib);
+  require('./modalcreator')(execlib.lib, applib, mylib);
   require('./datamodalcreator')(execlib.lib, applib);
 	require('./modalformcreator')(execlib, applib);
   require('./offcanvascreator')(execlib.lib, applib);

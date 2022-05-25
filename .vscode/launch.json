@@ -11,7 +11,7 @@
       "skipFiles": [
         "<node_internals>/**"
       ],
-      "program": "/home/andra/bin/allex-component-build",
+      "program": "${env:HOME}/bin/allex-component-build",
       "cwd": "${workspaceFolder}"
     }
   ]

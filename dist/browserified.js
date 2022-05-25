@@ -374,7 +374,7 @@ module.exports = createDataModalElement;
 function createElements (execlib, applib, mylib) {
   'use strict';
 
-  require('./modalcreator')(execlib.lib, applib);
+  require('./modalcreator')(execlib.lib, applib, mylib);
   require('./datamodalcreator')(execlib.lib, applib);
 	require('./modalformcreator')(execlib, applib);
   require('./offcanvascreator')(execlib.lib, applib);
@@ -388,10 +388,11 @@ function createElements (execlib, applib, mylib) {
 module.exports = createElements;
 
 },{"./customselectcreator":1,"./datamodalcreator":2,"./modalcreator":4,"./modalformcreator":5,"./offcanvascreator":6,"./popupcreator":7,"./questioncreator":8,"./serverlookupcreator":9,"./textinputwithlistcreator":10,"./toastscreator":11}],4:[function(require,module,exports){
-function createModalElement (lib, applib) {
+function createModalElement (lib, applib, mylib) {
   'use strict';
 
-  var DivElement = applib.getElementType('DivElement');
+  var DivElement = applib.getElementType('DivElement'),
+    ResurrectableMixin = mylib.mixins.Resurrectable;
 
   function findinoptions (options, name, dflt) {
     if (!options) {
@@ -410,19 +411,27 @@ function createModalElement (lib, applib) {
 
   function BSModalDiv (id, options) {
     DivElement.call(this, id, options);
+    ResurrectableMixin.call(this, options);
     this.modalInstance;
     this.modal_backdrop = findinoptions(options, 'backdrop', true);
     this.modal_keyboard = findinoptions(options, 'keyboard', true);
     this.modal_show = findinoptions(options, 'show', true);
   }
   lib.inherit(BSModalDiv, DivElement);
+  ResurrectableMixin.addMethods(BSModalDiv);
   BSModalDiv.prototype.__cleanUp = function () {
     this.modal_show = null;
     this.modal_keyboard = null;
     this.modal_backdrop = null;
     this.modalInstance = null;
+    ResurrectableMixin.prototype.destroy.call(this);
     DivElement.prototype.__cleanUp.call(this);
   };
+  BSModalDiv.prototype.set_actual = function (act) {
+    var ret = DivElement.prototype.set_actual.call(this, act);
+    this.handleActualChangeForResurrect(act);
+    return ret;
+  }
   BSModalDiv.prototype.showElement = function () {
     if (!this.modalInstance) {
       return;
@@ -456,8 +465,9 @@ function createModalElement (lib, applib) {
     this.$element.on('shown.bs.modal', this.onShownBsModal.bind(this));
     this.$element.on('hidden.bs.modal', this.onHiddenBsModal.bind(this));
   };
-  BSModalDiv.prototype.onShownBsModal = function () {
+  BSModalDiv.prototype.onShownBsModal = function (ev) {
     var zindex;
+    this.evaluateResurrectionTarget(ev);
     this.set('actual', true);
     zindex = 1040 + (10 * jQuery('.modal:visible').length);
     this.$element.css('z-index', zindex);
@@ -1724,11 +1734,60 @@ function createMixins (execlib) {
   var mylib = {};
 
   require('./tooltipablecreator')(execlib, mylib);
+  require('./resurrectablecreator')(execlib, mylib);
 
   return mylib;
 }
 module.exports = createMixins;
-},{"./tooltipablecreator":25}],25:[function(require,module,exports){
+},{"./resurrectablecreator":25,"./tooltipablecreator":26}],25:[function(require,module,exports){
+function createResurrectableMixin (execlib, mylib) {
+  'use strict';
+
+  var lib = execlib.lib;
+
+  function ResurrectableMixin (options) {
+    this.resurrectionAtrributeName = options ? options.resurrectionatrributename || 'data-bs-resurrect' : 'dataa-bs-resurrect';
+    this.resurrectionTarget = null;
+  }
+  ResurrectableMixin.prototype.destroy = function () {
+    this.resurrectionTarget = null;
+    this.resurrectionAtrributeName = null;
+  };
+
+  ResurrectableMixin.prototype.evaluateResurrectionTarget = function (ev) {
+    var resurrectiontarget;
+    if (!this.resurrectionAtrributeName) {
+      this.resurrectionTarget = null;
+      return;
+    }
+    this.resurrectionTarget = jQuery(ev.relatedTarget).attr(this.resurrectionAtrributeName) || null;
+  };
+
+  ResurrectableMixin.prototype.handleActualChangeForResurrect = function (act) {
+    var jqrest, rest, restmodalinstance;
+    if (!act && this.resurrectionTarget) {
+      jqrest = jQuery('#'+this.resurrectionTarget);
+      if (jqrest && jqrest.length>0) {
+        rest = jqrest[0];
+        restmodalinstance = bootstrap.Modal.getInstance(rest);
+        if (restmodalinstance) {
+          restmodalinstance.show();
+        }
+      }
+    }
+  };
+
+  ResurrectableMixin.addMethods = function (klass) {
+    lib.inheritMethods(klass, ResurrectableMixin
+      , 'evaluateResurrectionTarget'
+      , 'handleActualChangeForResurrect'
+    );
+  };
+
+  mylib.Resurrectable = ResurrectableMixin;
+}
+module.exports = createResurrectableMixin;
+},{}],26:[function(require,module,exports){
 function createTooltipableMixin (execlib, mylib) {
   'use strict';
 

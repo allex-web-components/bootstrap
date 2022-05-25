@@ -1,7 +1,8 @@
-function createModalElement (lib, applib) {
+function createModalElement (lib, applib, mylib) {
   'use strict';
 
-  var DivElement = applib.getElementType('DivElement');
+  var DivElement = applib.getElementType('DivElement'),
+    ResurrectableMixin = mylib.mixins.Resurrectable;
 
   function findinoptions (options, name, dflt) {
     if (!options) {
@@ -20,19 +21,27 @@ function createModalElement (lib, applib) {
 
   function BSModalDiv (id, options) {
     DivElement.call(this, id, options);
+    ResurrectableMixin.call(this, options);
     this.modalInstance;
     this.modal_backdrop = findinoptions(options, 'backdrop', true);
     this.modal_keyboard = findinoptions(options, 'keyboard', true);
     this.modal_show = findinoptions(options, 'show', true);
   }
   lib.inherit(BSModalDiv, DivElement);
+  ResurrectableMixin.addMethods(BSModalDiv);
   BSModalDiv.prototype.__cleanUp = function () {
     this.modal_show = null;
     this.modal_keyboard = null;
     this.modal_backdrop = null;
     this.modalInstance = null;
+    ResurrectableMixin.prototype.destroy.call(this);
     DivElement.prototype.__cleanUp.call(this);
   };
+  BSModalDiv.prototype.set_actual = function (act) {
+    var ret = DivElement.prototype.set_actual.call(this, act);
+    this.handleActualChangeForResurrect(act);
+    return ret;
+  }
   BSModalDiv.prototype.showElement = function () {
     if (!this.modalInstance) {
       return;
@@ -66,8 +75,9 @@ function createModalElement (lib, applib) {
     this.$element.on('shown.bs.modal', this.onShownBsModal.bind(this));
     this.$element.on('hidden.bs.modal', this.onHiddenBsModal.bind(this));
   };
-  BSModalDiv.prototype.onShownBsModal = function () {
+  BSModalDiv.prototype.onShownBsModal = function (ev) {
     var zindex;
+    this.evaluateResurrectionTarget(ev);
     this.set('actual', true);
     zindex = 1040 + (10 * jQuery('.modal:visible').length);
     this.$element.css('z-index', zindex);
