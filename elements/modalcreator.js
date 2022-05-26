@@ -67,6 +67,9 @@ function createModalElement (lib, applib, mylib) {
     if (!this.$element.hasClass('modal')) {
       this.$element.addClass('modal');
     }
+    if (this.$element.find('.modal-dialog').length != 1) {
+      throw new lib.Error('NEED_MODALDIALOG', this.id+' has to have a modal-dialog classed div within its $element, bootstrap.Modal will need it to work');
+    }
     this.modalInstance = new bootstrap.Modal(this.$element, {
       backdrop: this.modal_backdrop,
       keyboard: this.modal_keyboard,
