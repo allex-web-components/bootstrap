@@ -1563,7 +1563,7 @@ function createModalMarkups(lib, o, m, mylib) {
         'CONTENTS', o(m.div,
           'CLASS', 'modal-content',
           'CONTENTS', [
-            o(m.div,
+            options.noheader ? '' : o(m.div,
               'CLASS', 'modal-header',
               'ATTRS', 'popupelement="TitleContainer"',
               'CONTENTS', [
@@ -1591,7 +1591,7 @@ function createModalMarkups(lib, o, m, mylib) {
               'ATTRS', 'popupelement="Body"',
               'CONTENTS', options.caption || ''
             ),
-            o(m.div,
+            options.nofooter ? '' : o(m.div,
               'CLASS', 'modal-footer',
               'ATTRS', 'popupelement="Footer"',
               'CONTENTS', options.footer || ''
