@@ -22,6 +22,9 @@ function createCustomSelect (execlib, applib, mylib) {
     this.onBlurer = this.onBlur.bind(this);
     this.onKeyDowner = this.onKeyDown.bind(this);
     this.onKeyUper = this.onKeyUp.bind(this);
+
+    //seems like a logical default
+    this.setConfigVal('resetvalueonnewoptions', this.getConfigVal('resetvalueonnewoptions') || 'firstnew', true);
   }
   lib.inherit(CustomSelectElement, TextInputWithListElement);
   CustomSelectElement.prototype.__cleanUp = function () {
@@ -123,12 +126,22 @@ function createCustomSelect (execlib, applib, mylib) {
   };
   CustomSelectElement.prototype.onListFilled = function () {
     var options;
-    if (!this.itemFoundFromExistingValue && !this.getConfigVal('resetvalueonnewoptions')) {
-      //console.log('item not found from', this.get('options'));
-      options = this.get('options');
-      if (lib.isArray(options) && options.length>0) {
-        this.set('value', valueOfData(options[0], this.getConfigVal('valuepath')));
-      }
+    switch (this.getConfigVal('resetvalueonnewoptions')) {
+      case 'firstnew':
+        if (!this.itemFoundFromExistingValue) {
+          //console.log('item not found from', this.get('options'));
+          options = this.get('options');
+          if (lib.isArray(options) && options.length>0) {
+            this.set('value', valueOfData(options[0], this.getConfigVal('valuepath')));
+          }
+        }
+        break;
+      case 'none':
+        this.set('value', null);
+        break;
+      case 'keep':
+      default:
+        break;
     }
   };
 
