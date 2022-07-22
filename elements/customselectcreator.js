@@ -104,7 +104,7 @@ function createCustomSelect (execlib, applib, mylib) {
     };
     this.optionMap.add(id, option);
     this.list.append(li);
-    if (this.get('value') == val) {
+    if (this.get('value') === val) {
       this.itemFoundFromExistingValue = option;
       this.set('htmlvalue', txt);
     }
