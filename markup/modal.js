@@ -7,7 +7,7 @@ function createModalMarkups(lib, o, m, mylib) {
       'CLASS', 'modal' + (options.class ? ' '+options.class : ''),
       'ATTRS', options.attrs || '',
       'CONTENTS', o(m.div,
-        'CLASS', 'modal-dialog',
+        'CLASS', lib.joinStringsWith('modal-dialog', options.centered ? 'modal-dialog-centered' : '', ' '),
         'CONTENTS', o(m.div,
           'CLASS', 'modal-content',
           'CONTENTS', [
