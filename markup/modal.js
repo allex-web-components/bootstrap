@@ -7,8 +7,13 @@ function createModalMarkups(lib, o, m, mylib) {
       'CLASS', 'modal' + (options.class ? ' '+options.class : ''),
       'ATTRS', options.attrs || '',
       'CONTENTS', o(m.div,
-        'CLASS', lib.joinStringsWith('modal-dialog', options.centered ? 'modal-dialog-centered' : '', ' '),
-        'CONTENTS', o(m.div,
+        'CLASS', lib.joinStringsWith(
+          lib.joinStringsWith('modal-dialog', options.centered ? 'modal-dialog-centered' : '', ' '),
+          options.dialogclass,
+          ' '
+        ),
+        'ATTRS', options.dialogattrs || '',
+        'CONTENTS', o(m[options.dialogelement || 'div'],
           'CLASS', 'modal-content',
           'CONTENTS', [
             options.noheader ? '' : o(m.div,
