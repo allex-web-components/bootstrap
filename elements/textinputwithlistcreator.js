@@ -63,12 +63,17 @@ function createTextInputWithList (execlib, applib, mylib) {
   };
 
   function createMarkup (options) {
-    return o(m.textinput);
+    options = options || {};
+    return o(m.textinput
+      , 'CLASS', lib.joinStringsWith('dropdown-toggle', options.class, ' ')
+      , 'ATTRS', options.attrs
+      , 'CONTENTS', options.contents
+    );
   }
 
   function TextInputWithListElement (id, options) {
     options = options || {};
-    options.default_markup = options.default_markup || createMarkup(options);
+    options.default_markup = options.default_markup || createMarkup(options.markup);
     WebElement.call(this, id, options);
     DataHolderMixin.call(this, options);
     this.waiter = new BufferedWaiter(this.processWaiter.bind(this), options.input_timeout||0);
@@ -101,6 +106,7 @@ function createTextInputWithList (execlib, applib, mylib) {
     this.$element.parent().addClass('dropdown');
     this.$element.addClass('dropdown-toggle');
     this.$element.attr('data-bs-toggle', 'dropdown');
+    this.$element.val(this.getConfigVal('value'));
     this.listContainer = jQuery('<div>');
     this.listContainer.addClass('dropdown-menu');
     this.listContainer.css({

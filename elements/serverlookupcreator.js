@@ -9,6 +9,7 @@ function createServerLookup (execlib, applib, mylib) {
       throw new lib.Error('NO_ENVIRONMENTNAME', 'Options for '+this.constructor.name+' must specify the "environmentname"');
     }
     TextInputWithListElement.call(this, id, options);
+    this.initiallyFilled = false;
     this.needLookup = this.createBufferableHookCollection();
     this.chosenProposal = null;
   }
@@ -19,9 +20,19 @@ function createServerLookup (execlib, applib, mylib) {
       this.needLookup.destroy();
     }
     this.needLookup = null;
+    this.initiallyFilled = null;
     TextInputWithListElement.prototype.__cleanUp.call(this);
   };
   ServerLookupElement.prototype.fillList = function (rawitems) {
+    var currval;
+    if (!this.initiallyFilled) {
+      rawitems = [];
+      this.initiallyFilled = true;
+      currval = this.get('value');
+      if (lib.isVal(currval)) {
+        lib.runNext(this.needLookup.fire.bind(this.needLookup, currval));
+      }
+    }
     TextInputWithListElement.prototype.fillList.call(this, rawitems);
     this.dropdown.show();
   };

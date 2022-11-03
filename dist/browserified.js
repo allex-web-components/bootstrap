@@ -859,6 +859,7 @@ function createServerLookup (execlib, applib, mylib) {
       throw new lib.Error('NO_ENVIRONMENTNAME', 'Options for '+this.constructor.name+' must specify the "environmentname"');
     }
     TextInputWithListElement.call(this, id, options);
+    this.initiallyFilled = false;
     this.needLookup = this.createBufferableHookCollection();
     this.chosenProposal = null;
   }
@@ -869,9 +870,19 @@ function createServerLookup (execlib, applib, mylib) {
       this.needLookup.destroy();
     }
     this.needLookup = null;
+    this.initiallyFilled = null;
     TextInputWithListElement.prototype.__cleanUp.call(this);
   };
   ServerLookupElement.prototype.fillList = function (rawitems) {
+    var currval;
+    if (!this.initiallyFilled) {
+      rawitems = [];
+      this.initiallyFilled = true;
+      currval = this.get('value');
+      if (lib.isVal(currval)) {
+        lib.runNext(this.needLookup.fire.bind(this.needLookup, currval));
+      }
+    }
     TextInputWithListElement.prototype.fillList.call(this, rawitems);
     this.dropdown.show();
   };
@@ -1001,12 +1012,17 @@ function createTextInputWithList (execlib, applib, mylib) {
   };
 
   function createMarkup (options) {
-    return o(m.textinput);
+    options = options || {};
+    return o(m.textinput
+      , 'CLASS', lib.joinStringsWith('dropdown-toggle', options.class, ' ')
+      , 'ATTRS', options.attrs
+      , 'CONTENTS', options.contents
+    );
   }
 
   function TextInputWithListElement (id, options) {
     options = options || {};
-    options.default_markup = options.default_markup || createMarkup(options);
+    options.default_markup = options.default_markup || createMarkup(options.markup);
     WebElement.call(this, id, options);
     DataHolderMixin.call(this, options);
     this.waiter = new BufferedWaiter(this.processWaiter.bind(this), options.input_timeout||0);
@@ -1039,6 +1055,7 @@ function createTextInputWithList (execlib, applib, mylib) {
     this.$element.parent().addClass('dropdown');
     this.$element.addClass('dropdown-toggle');
     this.$element.attr('data-bs-toggle', 'dropdown');
+    this.$element.val(this.getConfigVal('value'));
     this.listContainer = jQuery('<div>');
     this.listContainer.addClass('dropdown-menu');
     this.listContainer.css({
