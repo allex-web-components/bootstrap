@@ -1842,6 +1842,7 @@ function createTooltipableMixin (execlib, mylib) {
 
   TooltipableMixin.prototype.doTooltip = function () {
     this.$element.attr('data-bs-toggle', 'tooltip');
+    this.$element.attr('data-bs-html', true);
   };
   TooltipableMixin.prototype.get_tooltip_position = function () {
     return this.tooltipPosition;
