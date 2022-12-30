@@ -5,7 +5,7 @@ function createCustomSelect (execlib, applib, mylib) {
     jquerylib = execlib.execSuite.libRegistry.get('allex_jqueryelementslib'),
     jqhelpers = jquerylib.helpers,
     TextInputWithListElement = applib.getElementType('TextInputWithList');
-  
+
   function CustomSelectElement (id, options) {
     TextInputWithListElement.call(this, id, options);
     this.options = (options && lib.isArray(options.options)) ? options.options : null;
@@ -22,6 +22,11 @@ function createCustomSelect (execlib, applib, mylib) {
     this.onKeyDowner = this.onKeyDown.bind(this);
     this.onKeyUper = this.onKeyUp.bind(this);
 
+    this.value0 = null;
+    this.value1 = null;
+    this.value2 = null;
+    this.value3 = null;
+
     //seems like a logical default
     this.setConfigVal('resetvalueonnewoptions', this.getConfigVal('resetvalueonnewoptions') || 'firstnew', true);
   }
@@ -37,6 +42,10 @@ function createCustomSelect (execlib, applib, mylib) {
       this.$element.off('keydown', this.onKeyDowner);
       this.$element.off('keyup', this.onKeyUper);
     }
+    this.value3 = null;
+    this.value2 = null;
+    this.value1 = null;
+    this.value0 = null;
     this.onKeyUper = null;
     this.onKeyDowner = null;
     this.onBlurer = null;
@@ -82,7 +91,7 @@ function createCustomSelect (execlib, applib, mylib) {
   };
   CustomSelectElement.prototype.rawDataToTextInputValue = function (rawitem) {
     this.selectedRawItem = rawitem;
-    this.set('value', valueOfData(rawitem, this.getConfigVal('valuepath'), ''));
+    this.set('value', valueOfData(rawitem, '', this.getConfigVal('valuepath')));
     return this.rawItemToText(rawitem);
   };
   CustomSelectElement.prototype.chooseItem = function (evnt) {
@@ -94,7 +103,7 @@ function createCustomSelect (execlib, applib, mylib) {
   CustomSelectElement.prototype.makeUseOfProducedOption = function (li, rawitem) {
     var id = lib.uid(), txt, val, option;
     txt = this.rawItemToText(rawitem);
-    val = valueOfData(rawitem, this.getConfigVal('valuepath'));
+    val = valueOfData(rawitem, void 0, this.getConfigVal('valuepath'));
     li.text(txt);
     li.attr('data', JSON.stringify(id));
     option = {
@@ -131,7 +140,7 @@ function createCustomSelect (execlib, applib, mylib) {
           //console.log('item not found from', this.get('options'));
           options = this.get('options');
           if (lib.isArray(options) && options.length>0) {
-            this.set('value', valueOfData(options[0], this.getConfigVal('valuepath')));
+            this.set('value', valueOfData(options[0], void 0, this.getConfigVal('valuepath')));
           }
         }
         break;
@@ -146,6 +155,10 @@ function createCustomSelect (execlib, applib, mylib) {
 
   CustomSelectElement.prototype.set_options = function (options) {
     var val;
+    var optssame = lib.isEqual(options, this.options);
+    if (optssame) {
+      //return true;
+    }
     if (this.optionMap) {
       this.optionMap.purge();
     }
@@ -166,8 +179,27 @@ function createCustomSelect (execlib, applib, mylib) {
     this.chooseItem({
       target: this.optionThatCorrespondsToValue(this.value)
     });
+    lib.runNext(setArrayValues.bind(this, selval));
+    selval = null;
     return true;
   };
+
+  //static
+  function setArrayValues (selval) {
+    var split, i;
+    if (lib.isArray(this.getConfigVal('valuepath')) && lib.isString(selval)) {
+      split = JSON.parse(selval);
+      for (i=0; i<4; i++) {
+        this.set('value'+i, split.length<=i ? null : split[i]);
+      }
+      return;
+    }
+    this.set('value0', null);
+    this.set('value1', null);
+    this.set('value2', null);
+    this.set('value3', null);
+  }
+  //endofstatic
 
   CustomSelectElement.prototype.prepareCustomSelect = function () {
     this.$element.on('show.bs.dropdown', this.onDropDownShower);
@@ -292,8 +324,14 @@ function createCustomSelect (execlib, applib, mylib) {
     this.listContainer[0].scrollTop = chosentop - listtop;
   };
 
-  //statics
-  function valueOfData (data, valuepath, dflt) {
+  function valueOfData (data, dflt, valuepath) {
+    var ret;
+    if (lib.isArray(valuepath)) {
+      ret = JSON.stringify(valuepath.map(valueOfData.bind(null, data, dflt)));
+      data = null;
+      dflt = null;
+      return ret;
+    }
     return data ? (valuepath ? data[valuepath] : data) : (lib.defined(dflt) ? dflt : data);
   }
 
@@ -304,7 +342,7 @@ function createCustomSelect (execlib, applib, mylib) {
       if (!data) {
         return;
       }
-      if (lib.isEqual(valueOfData(data, valpath), val)) {
+      if (lib.isEqual(valueOfData(data, void 0, valpath), val)) {
         return true;
       }
     } catch(e) {
