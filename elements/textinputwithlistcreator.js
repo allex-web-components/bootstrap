@@ -191,6 +191,7 @@ function createTextInputWithList (execlib, applib, mylib) {
     this.list.find('li').removeClass('active');
     this.dropdown.hide();
     if (!evnt.target) {
+      this.makeUseOfChosenItemData(null);
       return null;
     }
     jQuery(evnt.target).addClass('active');

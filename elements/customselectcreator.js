@@ -120,6 +120,7 @@ function createCustomSelect (execlib, applib, mylib) {
   };
   CustomSelectElement.prototype.makeUseOfChosenItemData = function (data) {
     //data is actually id
+    this.selectedRawItem = null;
     if (!this.optionMap) {
       return;
     }
@@ -142,6 +143,12 @@ function createCustomSelect (execlib, applib, mylib) {
           if (lib.isArray(options) && options.length>0) {
             this.set('value', valueOfData(options[0], void 0, this.getConfigVal('valuepath')));
           }
+        }
+        break;
+      case 'first':
+        options = this.get('options');
+        if (lib.isArray(options) && options.length>0) {
+          this.set('value', valueOfData(options[0], void 0, this.getConfigVal('valuepath')));
         }
         break;
       case 'none':
