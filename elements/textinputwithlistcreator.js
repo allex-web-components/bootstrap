@@ -77,15 +77,22 @@ function createTextInputWithList (execlib, applib, mylib) {
     WebElement.call(this, id, options);
     DataHolderMixin.call(this, options);
     this.waiter = new BufferedWaiter(this.processWaiter.bind(this), options.input_timeout||0);
+    this.clicked = new lib.HookCollection();
     this.dropdown = null;
     this.listContainer = null;
     this.list = null;
     this.rawItemsToFillIn = null;
     this.itemChooser = this.chooseItem.bind(this);
+    this.onClickeder = this.onClicked.bind(this);
   }
   lib.inherit(TextInputWithListElement, WebElement);
   DataHolderMixin.addMethods(TextInputWithListElement);
   TextInputWithListElement.prototype.__cleanUp = function () {
+    if (this.$element && this.waiter) {
+      this.$element.off('keydown', this.waiter.triggerer);
+      this.$element.off('show.bs.dropdown', this.onClickeder);
+    }
+    this.onClickeder = null;
     this.itemChooser = null;
     this.rawItemsToFillIn = null;
     this.list = null;
@@ -94,6 +101,10 @@ function createTextInputWithList (execlib, applib, mylib) {
       this.dropdown.dispose();
     }
     this.dropdown = null;
+    if(this.clicked) {
+       this.clicked.destroy();
+    }
+    this.clicked = null;
     if (this.waiter) {
       this.waiter.destroy();
     }
@@ -125,6 +136,7 @@ function createTextInputWithList (execlib, applib, mylib) {
     this.listContainer.insertAfter(this.$element);
     this.dropdown = new bootstrap.Dropdown(this.$element[0], {autoClose:false});
     this.$element.on('keydown', this.waiter.triggerer);
+    this.$element.on('show.bs.dropdown', this.onClickeder);
   };
   TextInputWithListElement.prototype.processWaiter = function () {
     if (!(this.$element && this.$element.length>0 && this.needLookup)){
@@ -212,6 +224,10 @@ function createTextInputWithList (execlib, applib, mylib) {
       lib.isString(rawitem) ||
       lib.isNumber(rawitem)
     ) ? rawitem+'' : JSON.stringify(rawitem);
+  };
+
+  TextInputWithListElement.prototype.onClicked = function (evnt) {
+    this.clicked.fire([evnt, null]); //compatible with ClickableElement
   };
 
   TextInputWithListElement.prototype.postInitializationMethodNames = TextInputWithListElement.prototype.postInitializationMethodNames.concat(['prepareTextInput']);
