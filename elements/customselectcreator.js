@@ -94,17 +94,12 @@ function createCustomSelect (execlib, applib, mylib) {
     this.set('value', valueOfData(rawitem, '', this.getConfigVal('valuepath')));
     return this.rawItemToText(rawitem);
   };
-  CustomSelectElement.prototype.chooseItem = function (evnt) {
-    var chosen = TextInputWithListElement.prototype.chooseItem.call(this, evnt);
-    if (chosen) {
-      this.showAllOptions();
-    }
-  };
   CustomSelectElement.prototype.makeUseOfProducedOption = function (li, rawitem) {
     var id = lib.uid(), txt, val, option;
     txt = this.rawItemToText(rawitem);
     val = valueOfData(rawitem, void 0, this.getConfigVal('valuepath'));
-    li.text(txt);
+    //li.text(txt);
+    this.visualizeOption(li, rawitem);
     li.attr('data', JSON.stringify(id));
     option = {
       li: li,
@@ -129,6 +124,7 @@ function createCustomSelect (execlib, applib, mylib) {
       return;
     }
     this.set('htmlvalue', this.rawDataToTextInputValue(optdata.data));
+    optdata.li.addClass('active');
   };
   CustomSelectElement.prototype.chooseItem = function (evnt) {
     return TextInputWithListElement.prototype.chooseItem.call(this, evnt);
@@ -156,6 +152,9 @@ function createCustomSelect (execlib, applib, mylib) {
         break;
       case 'keep':
       default:
+        if (this.itemFoundFromExistingValue && this.itemFoundFromExistingValue.li) {
+          this.itemFoundFromExistingValue.li.addClass('active');
+        }
         break;
     }
   };
@@ -289,7 +288,7 @@ function createCustomSelect (execlib, applib, mylib) {
     txt = null;
     return ret;
   };
-  function optionTextLowerContains (txt, li) {
+  CustomSelectElement.prototype.optionTextLowerContains = function (txt, li) {
     return li.innerHTML.toLowerCase().indexOf(txt)>=0;
   };
 
@@ -299,10 +298,11 @@ function createCustomSelect (execlib, applib, mylib) {
     });
   };
   CustomSelectElement.prototype.hideAllOptionsNotContaining = function (txt) {
-    jqhelpers.jQueryForEach(this.list, 'li', liCaseInsensitiveTxtShower.bind(null, txt));
+    jqhelpers.jQueryForEach(this.list, 'li', this.liCaseInsensitiveTxtShower.bind(this, txt));
+    txt = null;
   };
-  function liCaseInsensitiveTxtShower (txt, li) {
-    jQuery(li)[optionTextLowerContains(txt, li) ? 'show': 'hide']();
+  CustomSelectElement.prototype.liCaseInsensitiveTxtShower = function (txt, li) {
+    jQuery(li)[this.optionTextLowerContains(txt, li) ? 'show': 'hide']();
   }
 
   CustomSelectElement.prototype.optionThatCorrespondsToValue = function (val) {

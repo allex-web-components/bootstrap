@@ -172,15 +172,21 @@ function createTextInputWithList (execlib, applib, mylib) {
   //static end
   TextInputWithListElement.prototype.optionProducer = function (rawitem) {
     var li = jQuery('<li>');
+    li.css({
+      'white-space': 'pre'
+    });
     //console.log('proposal', prop);
     li.on('click', this.itemChooser);
     li.addClass('dropdown-item');
     this.makeUseOfProducedOption(li, rawitem);
   };
   TextInputWithListElement.prototype.makeUseOfProducedOption = function (li, rawitem) {
-    li.text(this.rawItemToText(rawitem));
+    this.visualizeOption(li, rawitem);
     li.attr('data', JSON.stringify(rawitem));
     this.list.append(li);
+  };
+  TextInputWithListElement.prototype.visualizeOption = function (li, rawitem) {
+    li.text(this.rawItemToText(rawitem));
   };
   TextInputWithListElement.prototype.rawItemToText = function (rawitem) {
     return (
@@ -199,20 +205,21 @@ function createTextInputWithList (execlib, applib, mylib) {
 
   TextInputWithListElement.prototype.chooseItem = function (evnt) {
     //console.log(evnt);
-    var data;
+    var data, target;
     this.list.find('li').removeClass('active');
     this.dropdown.hide();
-    if (!evnt.target) {
+    target = evnt.currentTarget || evnt.target;
+    if (!target) {
       this.makeUseOfChosenItemData(null);
       return null;
     }
-    jQuery(evnt.target).addClass('active');
+    jQuery(target).addClass('active');
     try {
-      data = JSON.parse(evnt.target.getAttribute('data'));
+      data = JSON.parse(target.getAttribute('data'));
       this.makeUseOfChosenItemData(data);
-      return evnt.target;
+      return target;
     } catch(ignore) {
-      console.error('sta sad?', ignore, 'na', evnt.target);
+      console.error('sta sad?', ignore, 'na', target);
       return null;
     }
   };
