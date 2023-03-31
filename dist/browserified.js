@@ -8,8 +8,9 @@ function createCustomSelect (execlib, applib, mylib) {
     TextInputWithListElement = applib.getElementType('TextInputWithList');
 
   function CustomSelectElement (id, options) {
+    options = options || {};
     TextInputWithListElement.call(this, id, options);
-    this.options = (options && lib.isArray(options.options)) ? options.options : null;
+    this.options = (lib.isArray(options.options)) ? options.options : null;
     this.value = null;
     this.selectedRawItem = null;
     this.itemFoundFromExistingValue = null;
@@ -130,48 +131,72 @@ function createCustomSelect (execlib, applib, mylib) {
   CustomSelectElement.prototype.chooseItem = function (evnt) {
     return TextInputWithListElement.prototype.chooseItem.call(this, evnt);
   };
+  function setValueFirstNew () {
+    var options;
+    if (!this.itemFoundFromExistingValue) {
+      //console.log('item not found from', this.get('options'));
+      options = this.get('options');
+      if (lib.isArray(options) && options.length>0) {
+        this.set('value', valueOfData(options[0], void 0, this.getConfigVal('valuepath')));
+      }
+    }
+  }
+  function setValueFirst () {
+    var options = this.get('options');
+    if (lib.isArray(options) && options.length>0) {
+      this.set('value', valueOfData(options[0], void 0, this.getConfigVal('valuepath')));
+    }
+  }
+  function setValueNone () {
+    this.set('value', null);
+  }
+  function setValueKeep () {
+    if (this.itemFoundFromExistingValue && this.itemFoundFromExistingValue.li) {
+      this.itemFoundFromExistingValue.li.addClass('active');
+    }
+    this.chooseItem({
+      target: this.optionThatCorrespondsToValue(this.value)
+    });    
+  }
   CustomSelectElement.prototype.onListFilled = function () {
     var options;
     switch (this.getConfigVal('resetvalueonnewoptions')) {
       case 'firstnew':
-        if (!this.itemFoundFromExistingValue) {
-          //console.log('item not found from', this.get('options'));
-          options = this.get('options');
-          if (lib.isArray(options) && options.length>0) {
-            this.set('value', valueOfData(options[0], void 0, this.getConfigVal('valuepath')));
-          }
-        }
+        setValueFirstNew.call(this);
         break;
       case 'first':
-        options = this.get('options');
-        if (lib.isArray(options) && options.length>0) {
-          this.set('value', valueOfData(options[0], void 0, this.getConfigVal('valuepath')));
+        setValueFirst.call(this);
+        break;
+      case 'firstifnotval':
+        if (!lib.isVal(this.get('value'))) {
+          setValueFirst.call(this);
         }
         break;
       case 'none':
-        this.set('value', null);
+        setValueNone.call(this);
         break;
       case 'keep':
       default:
-        if (this.itemFoundFromExistingValue && this.itemFoundFromExistingValue.li) {
-          this.itemFoundFromExistingValue.li.addClass('active');
-        }
+        setValueKeep.call(this);
         break;
     }
   };
 
   CustomSelectElement.prototype.set_options = function (options) {
-    var val;
+    var val, oldoptions;
+    /*
     var optssame = lib.isEqual(options, this.options);
     if (optssame) {
       //return true;
     }
+    */
+    oldoptions = this.options||[];
     if (this.optionMap) {
       this.optionMap.purge();
     }
     this.options = options;
     this.itemFoundFromExistingValue = null;
-    this.fillList(options);
+    this.fillList(options, oldoptions.length);
     return true;
   };
   CustomSelectElement.prototype.get_value = function () {
@@ -217,6 +242,9 @@ function createCustomSelect (execlib, applib, mylib) {
     this.$element.on('blur', this.onBlurer);
     this.$element.on('keydown', this.onKeyDowner);
     this.$element.on('keyup', this.onKeyUper);
+    if (this.getConfigVal('value')) {
+      this.set('value', this.getConfigVal('value'));
+    }
     if (this.options) {
       this.set('options', this.options.slice());
     }
@@ -1140,18 +1168,18 @@ function createTextInputWithList (execlib, applib, mylib) {
   };
   TextInputWithListElement.prototype.processTextInput = function (val) {};
 
-  TextInputWithListElement.prototype.fillList = function (rawitems) {
+  TextInputWithListElement.prototype.fillList = function (rawitems, oldlistlength) {
     if (!this.dropdown) {
       return;
     }
     this.clearList();
     this.dropdown.hide();
-    listFiller.call(this, (lib.isArray(rawitems) ? rawitems : []));
+    listFiller.call(this, lib.isArray(rawitems) ? rawitems : [], oldlistlength);
     //(lib.isArray(rawitems) ? rawitems : []).forEach(this.optionProducer.bind(this)); //dangerously slow for a lot of rawitems
   };
   TextInputWithListElement.prototype.onListFilled = function () {  };
   //static
-  function listFiller (items) {
+  function listFiller (items, olditemslength) {
     var i, item, top;
     top = items.length;
     this.rawItemsToFillIn = items;
@@ -1160,6 +1188,9 @@ function createTextInputWithList (execlib, applib, mylib) {
     }
     for (i=0; i<top; i++) {
       this.optionProducer(items[i]);
+      if (i==olditemslength) {
+        this.onListFilled();
+      }
     }
     this.jobs.run('.', new ListFillerJob(this, items, i)).then(this.onListFilled.bind(this));
   }

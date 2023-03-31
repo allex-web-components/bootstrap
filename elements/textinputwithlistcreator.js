@@ -146,18 +146,18 @@ function createTextInputWithList (execlib, applib, mylib) {
   };
   TextInputWithListElement.prototype.processTextInput = function (val) {};
 
-  TextInputWithListElement.prototype.fillList = function (rawitems) {
+  TextInputWithListElement.prototype.fillList = function (rawitems, oldlistlength) {
     if (!this.dropdown) {
       return;
     }
     this.clearList();
     this.dropdown.hide();
-    listFiller.call(this, (lib.isArray(rawitems) ? rawitems : []));
+    listFiller.call(this, lib.isArray(rawitems) ? rawitems : [], oldlistlength);
     //(lib.isArray(rawitems) ? rawitems : []).forEach(this.optionProducer.bind(this)); //dangerously slow for a lot of rawitems
   };
   TextInputWithListElement.prototype.onListFilled = function () {  };
   //static
-  function listFiller (items) {
+  function listFiller (items, olditemslength) {
     var i, item, top;
     top = items.length;
     this.rawItemsToFillIn = items;
@@ -166,6 +166,9 @@ function createTextInputWithList (execlib, applib, mylib) {
     }
     for (i=0; i<top; i++) {
       this.optionProducer(items[i]);
+      if (i==olditemslength) {
+        this.onListFilled();
+      }
     }
     this.jobs.run('.', new ListFillerJob(this, items, i)).then(this.onListFilled.bind(this));
   }
