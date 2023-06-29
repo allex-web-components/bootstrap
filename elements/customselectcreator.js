@@ -241,7 +241,7 @@ function createCustomSelect (execlib, applib, mylib) {
     this.$element.on('blur', this.onBlurer);
     this.$element.on('keydown', this.onKeyDowner);
     this.$element.on('keyup', this.onKeyUper);
-    if (this.getConfigVal('value')) {
+    if (lib.isVal(this.getConfigVal('value'))) {
       this.set('value', this.getConfigVal('value'));
     }
     if (this.options) {
