@@ -132,19 +132,23 @@ function createCustomSelect (execlib, applib, mylib) {
     return TextInputWithListElement.prototype.chooseItem.call(this, evnt);
   };
   function setValueFirstNew () {
-    var options;
     if (!this.itemFoundFromExistingValue) {
       //console.log('item not found from', this.get('options'));
-      options = this.get('options');
-      if (lib.isArray(options) && options.length>0) {
-        this.set('value', valueOfData(options[0], void 0, this.getConfigVal('valuepath')));
-      }
+      setValueFirst.call(this);
     }
   }
   function setValueFirst () {
     var options = this.get('options');
-    if (lib.isArray(options) && options.length>0) {
-      this.set('value', valueOfData(options[0], void 0, this.getConfigVal('valuepath')));
+    this.set('value', (lib.isArray(options) && options.length>0) ? valueOfData(options[0], void 0, this.getConfigVal('valuepath')) : null);
+  }
+  function setValueFirstIfNotVal () {
+    var options = this.get('options');
+    if (!(lib.isArray(options) && options.length>0)) {
+      this.set('value', null);
+      return;
+    }
+    if (!lib.isVal(this.get('value'))) {
+      setValueFirst.call(this);
     }
   }
   function setValueNone () {
@@ -168,9 +172,7 @@ function createCustomSelect (execlib, applib, mylib) {
         setValueFirst.call(this);
         break;
       case 'firstifnotval':
-        if (!lib.isVal(this.get('value'))) {
-          setValueFirst.call(this);
-        }
+        setValueFirstIfNotVal.call(this);
         break;
       case 'none':
         setValueNone.call(this);
