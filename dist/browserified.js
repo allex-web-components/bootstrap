@@ -96,6 +96,29 @@ function createCustomSelect (execlib, applib, mylib) {
     this.set('value', valueOfData(rawitem, '', this.getConfigVal('valuepath')));
     return this.rawItemToText(rawitem);
   };
+  CustomSelectElement.prototype.makeUpOption = function (desc, rawitem) {
+    var id = lib.uid();
+    desc.contents = this.rawItemToText(rawitem);
+    desc.attrib.data = JSON.stringify(id);
+  };
+  CustomSelectElement.prototype.handleProducedOption = function (rawitems, index, li) {
+    var id, txt, val, option, rawitem;
+    TextInputWithListElement.prototype.handleProducedOption.call(this, rawitems, index, li);
+    rawitem = rawitems[index];
+    txt = this.rawItemToText(rawitem);
+    val = valueOfData(rawitem, void 0, this.getConfigVal('valuepath'));
+    id = JSON.parse(li.getAttribute('data'));
+    option = {
+      li: li,
+      data: rawitem,
+      value: val
+    };
+    this.optionMap.add(id, option);
+    if (this.get('value') === val) {
+      this.itemFoundFromExistingValue = option;
+      this.set('htmlvalue', txt);
+    }
+  };
   CustomSelectElement.prototype.makeUseOfProducedOption = function (li, rawitem) {
     var id = lib.uid(), txt, val, option;
     txt = this.rawItemToText(rawitem);
@@ -125,8 +148,11 @@ function createCustomSelect (execlib, applib, mylib) {
     if (!optdata) {
       return;
     }
+    if (this.id == 'From') {
+      console.log('htmlvalue will be', this.rawDataToTextInputValue(optdata.data));
+    }
     this.set('htmlvalue', this.rawDataToTextInputValue(optdata.data));
-    optdata.li.addClass('active');
+    optdata.li.classList.add('active');
   };
   CustomSelectElement.prototype.chooseItem = function (evnt) {
     return TextInputWithListElement.prototype.chooseItem.call(this, evnt);
@@ -139,6 +165,9 @@ function createCustomSelect (execlib, applib, mylib) {
   }
   function setValueFirst () {
     var options = this.get('options');
+    if (this.id == 'From') {
+      console.log('value will be', (lib.isArray(options) && options.length>0) ? valueOfData(options[0], void 0, this.getConfigVal('valuepath')) : null);
+    }
     this.set('value', (lib.isArray(options) && options.length>0) ? valueOfData(options[0], void 0, this.getConfigVal('valuepath')) : null);
   }
   function setValueFirstIfNotVal () {
@@ -156,7 +185,7 @@ function createCustomSelect (execlib, applib, mylib) {
   }
   function setValueKeep () {
     if (this.itemFoundFromExistingValue && this.itemFoundFromExistingValue.li) {
-      this.itemFoundFromExistingValue.li.addClass('active');
+      this.itemFoundFromExistingValue.li.classList.add('active');
     }
     this.chooseItem({
       target: this.optionThatCorrespondsToValue(this.value)
@@ -344,7 +373,7 @@ function createCustomSelect (execlib, applib, mylib) {
     valuepath = this.getConfigVal('valuepath');
     ret = this.optionMap.traverseConditionally(function(optdata) {
       if (lib.isEqual(optdata.value, val)){
-        return optdata.li[0];
+        return optdata.li;
       }
     });
     valuepath = null;
@@ -1082,7 +1111,7 @@ function createTextInputWithList (execlib, applib, mylib) {
       this.resolve(this.currentIndex);
       return;
     }
-    this.destroyable.optionProducer(this.rawItems[this.currentIndex]);
+    this.destroyable.optionProducerOld(this.rawItems[this.currentIndex]);
     lib.runNext(this.fillOne.bind(this));
   };
 
@@ -1177,11 +1206,11 @@ function createTextInputWithList (execlib, applib, mylib) {
     this.clearList();
     this.dropdown.hide();
     listFiller.call(this, lib.isArray(rawitems) ? rawitems : [], oldlistlength);
-    //(lib.isArray(rawitems) ? rawitems : []).forEach(this.optionProducer.bind(this)); //dangerously slow for a lot of rawitems
+    //(lib.isArray(rawitems) ? rawitems : []).forEach(this.optionProducerOld.bind(this)); //dangerously slow for a lot of rawitems
   };
   TextInputWithListElement.prototype.onListFilled = function () {  };
   //static
-  function listFiller (items, olditemslength) {
+  function listFillerOld (items, olditemslength) {
     var i, item, top;
     top = items.length;
     this.rawItemsToFillIn = items;
@@ -1189,15 +1218,67 @@ function createTextInputWithList (execlib, applib, mylib) {
       top = _MAX_ITEMS_TO_FILLIN_ASYC;
     }
     for (i=0; i<top; i++) {
-      this.optionProducer(items[i]);
+      this.optionProducerOld(items[i]);
       if (i==olditemslength) {
         this.onListFilled();
       }
     }
     this.jobs.run('.', new ListFillerJob(this, items, i)).then(this.onListFilled.bind(this));
   }
+  function listFiller (items, olditemslength) {
+    var innerhtml = (items||[]).reduce(this.optionProducer.bind(this), '');
+    this.list[0].innerHTML = innerhtml;
+    this.list.find('li').each(this.handleProducedOption.bind(this, items));
+    items = null;
+    lib.runNext(this.onListFilled.bind(this));
+  }
   //static end
-  TextInputWithListElement.prototype.optionProducer = function (rawitem) {
+  //should go to lib
+  function hashReducer (rdcobj, val, key) {
+    rdcobj.seed = rdcobj.func(rdcobj.seed, val, key);
+  }
+  function reduceHash (h, func, seed) {
+    var seedobj = {seed: seed, func: func}, ret;
+    lib.traverseShallow(h, hashReducer.bind(null, seedobj));
+    ret = seedobj.seed;
+    return ret;
+  }
+  //endof should go to lib
+  function csser (res, val, key) {
+    return lib.joinStringsWith(res, key+':'+val+';', '');
+  }
+    function attriber (res, val, key) {
+    return lib.joinStringsWith(res, key+"='"+val+"'", ' ');
+  }
+  TextInputWithListElement.prototype.optionProducer = function (res, rawitem) {
+    var desc = {
+      css: {
+        'white-space': 'pre'
+      },
+      attrib: {
+
+      },
+      class: ['dropdown-item'],
+      contents: ''
+    };
+    this.makeUpOption(desc, rawitem);
+    var finalcss = reduceHash(desc.css, csser, '');
+    var finalattrs = reduceHash(desc.attrib, attriber, '');
+    res = lib.joinStringsWith(res, o(m.li
+      , 'CLASS', desc.class.join(' ')
+      , 'ATTRS', 'style="'+finalcss+'" '+finalattrs
+      , 'CONTENTS', desc.contents
+    ),'\n');
+    return res;
+  };
+  TextInputWithListElement.prototype.makeUpOption = function (desc, rawitem) {
+    desc.contents = this.rawItemToText(rawitem);
+    desc.attrib.data = JSON.stringify(rawitem);
+  };
+  TextInputWithListElement.prototype.handleProducedOption = function (rawitems, index, li) {
+    li.onclick = this.itemChooser;
+  };
+  TextInputWithListElement.prototype.optionProducerOld = function (rawitem) {
     var li = jQuery('<li>');
     li.css({
       'white-space': 'pre'

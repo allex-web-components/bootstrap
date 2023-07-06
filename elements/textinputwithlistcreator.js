@@ -58,7 +58,7 @@ function createTextInputWithList (execlib, applib, mylib) {
       this.resolve(this.currentIndex);
       return;
     }
-    this.destroyable.optionProducer(this.rawItems[this.currentIndex]);
+    this.destroyable.optionProducerOld(this.rawItems[this.currentIndex]);
     lib.runNext(this.fillOne.bind(this));
   };
 
@@ -153,11 +153,11 @@ function createTextInputWithList (execlib, applib, mylib) {
     this.clearList();
     this.dropdown.hide();
     listFiller.call(this, lib.isArray(rawitems) ? rawitems : [], oldlistlength);
-    //(lib.isArray(rawitems) ? rawitems : []).forEach(this.optionProducer.bind(this)); //dangerously slow for a lot of rawitems
+    //(lib.isArray(rawitems) ? rawitems : []).forEach(this.optionProducerOld.bind(this)); //dangerously slow for a lot of rawitems
   };
   TextInputWithListElement.prototype.onListFilled = function () {  };
   //static
-  function listFiller (items, olditemslength) {
+  function listFillerOld (items, olditemslength) {
     var i, item, top;
     top = items.length;
     this.rawItemsToFillIn = items;
@@ -165,15 +165,67 @@ function createTextInputWithList (execlib, applib, mylib) {
       top = _MAX_ITEMS_TO_FILLIN_ASYC;
     }
     for (i=0; i<top; i++) {
-      this.optionProducer(items[i]);
+      this.optionProducerOld(items[i]);
       if (i==olditemslength) {
         this.onListFilled();
       }
     }
     this.jobs.run('.', new ListFillerJob(this, items, i)).then(this.onListFilled.bind(this));
   }
+  function listFiller (items, olditemslength) {
+    var innerhtml = (items||[]).reduce(this.optionProducer.bind(this), '');
+    this.list[0].innerHTML = innerhtml;
+    this.list.find('li').each(this.handleProducedOption.bind(this, items));
+    items = null;
+    lib.runNext(this.onListFilled.bind(this));
+  }
   //static end
-  TextInputWithListElement.prototype.optionProducer = function (rawitem) {
+  //should go to lib
+  function hashReducer (rdcobj, val, key) {
+    rdcobj.seed = rdcobj.func(rdcobj.seed, val, key);
+  }
+  function reduceHash (h, func, seed) {
+    var seedobj = {seed: seed, func: func}, ret;
+    lib.traverseShallow(h, hashReducer.bind(null, seedobj));
+    ret = seedobj.seed;
+    return ret;
+  }
+  //endof should go to lib
+  function csser (res, val, key) {
+    return lib.joinStringsWith(res, key+':'+val+';', '');
+  }
+    function attriber (res, val, key) {
+    return lib.joinStringsWith(res, key+"='"+val+"'", ' ');
+  }
+  TextInputWithListElement.prototype.optionProducer = function (res, rawitem) {
+    var desc = {
+      css: {
+        'white-space': 'pre'
+      },
+      attrib: {
+
+      },
+      class: ['dropdown-item'],
+      contents: ''
+    };
+    this.makeUpOption(desc, rawitem);
+    var finalcss = reduceHash(desc.css, csser, '');
+    var finalattrs = reduceHash(desc.attrib, attriber, '');
+    res = lib.joinStringsWith(res, o(m.li
+      , 'CLASS', desc.class.join(' ')
+      , 'ATTRS', 'style="'+finalcss+'" '+finalattrs
+      , 'CONTENTS', desc.contents
+    ),'\n');
+    return res;
+  };
+  TextInputWithListElement.prototype.makeUpOption = function (desc, rawitem) {
+    desc.contents = this.rawItemToText(rawitem);
+    desc.attrib.data = JSON.stringify(rawitem);
+  };
+  TextInputWithListElement.prototype.handleProducedOption = function (rawitems, index, li) {
+    li.onclick = this.itemChooser;
+  };
+  TextInputWithListElement.prototype.optionProducerOld = function (rawitem) {
     var li = jQuery('<li>');
     li.css({
       'white-space': 'pre'

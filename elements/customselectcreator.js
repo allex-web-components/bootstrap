@@ -95,6 +95,29 @@ function createCustomSelect (execlib, applib, mylib) {
     this.set('value', valueOfData(rawitem, '', this.getConfigVal('valuepath')));
     return this.rawItemToText(rawitem);
   };
+  CustomSelectElement.prototype.makeUpOption = function (desc, rawitem) {
+    var id = lib.uid();
+    desc.contents = this.rawItemToText(rawitem);
+    desc.attrib.data = JSON.stringify(id);
+  };
+  CustomSelectElement.prototype.handleProducedOption = function (rawitems, index, li) {
+    var id, txt, val, option, rawitem;
+    TextInputWithListElement.prototype.handleProducedOption.call(this, rawitems, index, li);
+    rawitem = rawitems[index];
+    txt = this.rawItemToText(rawitem);
+    val = valueOfData(rawitem, void 0, this.getConfigVal('valuepath'));
+    id = JSON.parse(li.getAttribute('data'));
+    option = {
+      li: li,
+      data: rawitem,
+      value: val
+    };
+    this.optionMap.add(id, option);
+    if (this.get('value') === val) {
+      this.itemFoundFromExistingValue = option;
+      this.set('htmlvalue', txt);
+    }
+  };
   CustomSelectElement.prototype.makeUseOfProducedOption = function (li, rawitem) {
     var id = lib.uid(), txt, val, option;
     txt = this.rawItemToText(rawitem);
@@ -124,8 +147,11 @@ function createCustomSelect (execlib, applib, mylib) {
     if (!optdata) {
       return;
     }
+    if (this.id == 'From') {
+      console.log('htmlvalue will be', this.rawDataToTextInputValue(optdata.data));
+    }
     this.set('htmlvalue', this.rawDataToTextInputValue(optdata.data));
-    optdata.li.addClass('active');
+    optdata.li.classList.add('active');
   };
   CustomSelectElement.prototype.chooseItem = function (evnt) {
     return TextInputWithListElement.prototype.chooseItem.call(this, evnt);
@@ -138,6 +164,9 @@ function createCustomSelect (execlib, applib, mylib) {
   }
   function setValueFirst () {
     var options = this.get('options');
+    if (this.id == 'From') {
+      console.log('value will be', (lib.isArray(options) && options.length>0) ? valueOfData(options[0], void 0, this.getConfigVal('valuepath')) : null);
+    }
     this.set('value', (lib.isArray(options) && options.length>0) ? valueOfData(options[0], void 0, this.getConfigVal('valuepath')) : null);
   }
   function setValueFirstIfNotVal () {
@@ -155,7 +184,7 @@ function createCustomSelect (execlib, applib, mylib) {
   }
   function setValueKeep () {
     if (this.itemFoundFromExistingValue && this.itemFoundFromExistingValue.li) {
-      this.itemFoundFromExistingValue.li.addClass('active');
+      this.itemFoundFromExistingValue.li.classList.add('active');
     }
     this.chooseItem({
       target: this.optionThatCorrespondsToValue(this.value)
@@ -343,7 +372,7 @@ function createCustomSelect (execlib, applib, mylib) {
     valuepath = this.getConfigVal('valuepath');
     ret = this.optionMap.traverseConditionally(function(optdata) {
       if (lib.isEqual(optdata.value, val)){
-        return optdata.li[0];
+        return optdata.li;
       }
     });
     valuepath = null;
