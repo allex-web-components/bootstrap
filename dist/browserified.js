@@ -1135,18 +1135,23 @@ function createTextInputWithList (execlib, applib, mylib) {
     this.listContainer = null;
     this.list = null;
     this.rawItemsToFillIn = null;
+    this.keyDowner = this.onTextInputWithListElementKeyDown.bind(this);
     this.itemChooser = this.chooseItem.bind(this);
     this.onClickeder = this.onClicked.bind(this);
+    this.onTextInputWithListElementBlurer = this.onTextInputWithListElementBlur.bind(this);
   }
   lib.inherit(TextInputWithListElement, WebElement);
   DataHolderMixin.addMethods(TextInputWithListElement);
   TextInputWithListElement.prototype.__cleanUp = function () {
     if (this.$element && this.waiter) {
-      this.$element.off('keydown', this.waiter.triggerer);
+      this.$element.off('blur', this.onTextInputWithListElementBlurer);
+      this.$element.off('keydown', this.keyDowner);
       this.$element.off('show.bs.dropdown', this.onClickeder);
     }
+    this.onTextInputWithListElementBlurer = null;
     this.onClickeder = null;
     this.itemChooser = null;
+    this.keyDowner = null;
     this.rawItemsToFillIn = null;
     this.list = null;
     this.listContainer = null;
@@ -1188,8 +1193,9 @@ function createTextInputWithList (execlib, applib, mylib) {
     this.listContainer.append(this.list);
     this.listContainer.insertAfter(this.$element);
     this.dropdown = new bootstrap.Dropdown(this.$element[0], {autoClose:false});
-    this.$element.on('keydown', this.waiter.triggerer);
+    this.$element.on('keydown', this.keyDowner);
     this.$element.on('show.bs.dropdown', this.onClickeder);
+    this.$element.on('blur', this.onTextInputWithListElementBlurer);
   };
   TextInputWithListElement.prototype.processWaiter = function () {
     if (!(this.$element && this.$element.length>0 && this.needLookup)){
@@ -1311,6 +1317,28 @@ function createTextInputWithList (execlib, applib, mylib) {
     this.list.empty();
   };
 
+  TextInputWithListElement.prototype.onTextInputWithListElementKeyDown = function (evnt) {
+    var code = (evnt && evnt.originalEvent) ? evnt.originalEvent.code : null;
+    switch (code) {
+      case 'ArrowUp':
+        evnt.preventDefault();
+        evnt.stopPropagation();
+        this.moveListSelection(-1);
+        return;
+        break;
+      case 'ArrowDown':
+        evnt.preventDefault();
+        evnt.stopPropagation();
+        this.moveListSelection(1);
+        return;
+        break;
+      case 'Enter':
+        this.makeUseOfVisibleActive(evnt);
+        return;
+        break;
+  }
+    this.waiter.triggerer(evnt);
+  };
   TextInputWithListElement.prototype.chooseItem = function (evnt) {
     //console.log(evnt);
     var data, target;
@@ -1322,14 +1350,7 @@ function createTextInputWithList (execlib, applib, mylib) {
       return null;
     }
     jQuery(target).addClass('active');
-    try {
-      data = JSON.parse(target.getAttribute('data'));
-      this.makeUseOfChosenItemData(data);
-      return target;
-    } catch(ignore) {
-      console.error('sta sad?', ignore, 'na', target);
-      return null;
-    }
+    return this.makeUseOfElement(target);
   };
   TextInputWithListElement.prototype.makeUseOfChosenItemData = function (data) {
     this.set('value', this.rawDataToTextInputValue(data));
@@ -1344,6 +1365,66 @@ function createTextInputWithList (execlib, applib, mylib) {
   TextInputWithListElement.prototype.onClicked = function (evnt) {
     this.clicked.fire([evnt, null]); //compatible with ClickableElement
   };
+  TextInputWithListElement.prototype.onTextInputWithListElementBlur = function (evnt) {
+    var active;
+    if (!this.list) {return;}
+    active = this.list.find('li.active');
+    if (!(active && active.length>0)) {
+      return;
+    }
+    this.makeUseOfElement(active);
+  };
+  TextInputWithListElement.prototype.makeUseOfVisibleActive = function (evnt) {
+    var active;
+    if (!this.list.is(':visible')) {return;}
+    active = this.list.find('li.active');
+    if (!(active && active.length>0)) {
+      return;
+    }
+    evnt.preventDefault();
+    evnt.stopPropagation();
+    this.makeUseOfElement(active);
+  };
+  TextInputWithListElement.prototype.makeUseOfElement = function (element) {
+    var data;
+    var el = (element && element.length>0) ? element[0] : element;
+    try {
+      data = JSON.parse(el.getAttribute('data'));
+      this.makeUseOfChosenItemData(data);
+      return el;
+    } catch(ignore) {
+      console.error('sta sad?', ignore, 'na', el);
+      return null;
+    }
+  }
+
+  TextInputWithListElement.prototype.moveListSelection = function (direction) {
+    var active, target, data;
+    if (!(lib.isNumber(direction) && direction)) {
+      return;
+    }
+    if (!this.list.is(':visible')) {
+      return;
+    }
+    active = this.list.find('li.active');
+    target = target4direction(this.list, active, direction);
+    if (target && target.length>0) {
+      active.removeClass('active');
+      target.addClass('active');
+      target[0].scrollIntoView();
+
+    }
+  };
+  function target4direction (list, active, direction) {
+    if (!(active && active.length>0)) {
+      return direction>0
+      ?
+      list.find('li:first')
+      :
+      list.find('li:last');
+    }
+    return direction>0 ? active.next() : active.prev();
+  }
 
   TextInputWithListElement.prototype.postInitializationMethodNames = TextInputWithListElement.prototype.postInitializationMethodNames.concat(['prepareTextInput']);
 
