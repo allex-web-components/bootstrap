@@ -19,9 +19,6 @@ function createCustomSelect (execlib, applib, mylib) {
     this.onDropDownShowner = this.onDropDownShown.bind(this);
     this.onDropDownHider = this.onDropDownHide.bind(this);
     this.onDropDownHiddener = this.onDropDownHidden.bind(this);
-    this.onFocuser = this.onFocus.bind(this);
-    this.onBlurer = this.onBlur.bind(this);
-    this.onKeyDowner = this.onKeyDown.bind(this);
     this.onKeyUper = this.onKeyUp.bind(this);
 
     this.value0 = null;
@@ -39,9 +36,6 @@ function createCustomSelect (execlib, applib, mylib) {
       this.$element.off('show.bs.dropdown', this.onDropDownShower);
       this.$element.off('hide.bs.dropdown', this.onDropDownHider);
       this.$element.off('hidden.bs.dropdown', this.onDropDownHiddener);
-      this.$element.off('blur', this.onBlurer);
-      this.$element.off('focus', this.onFocuser);
-      this.$element.off('keydown', this.onKeyDowner);
       this.$element.off('keyup', this.onKeyUper);
     }
     this.value3 = null;
@@ -49,9 +43,6 @@ function createCustomSelect (execlib, applib, mylib) {
     this.value1 = null;
     this.value0 = null;
     this.onKeyUper = null;
-    this.onKeyDowner = null;
-    this.onBlurer = null;
-    this.onFocuser = null;
     this.onDropDownHiddener = null;
     this.onDropDownHider = null;
     this.onDropDownShowner = null;
@@ -269,9 +260,7 @@ function createCustomSelect (execlib, applib, mylib) {
     this.$element.on('shown.bs.dropdown', this.onDropDownShowner);
     this.$element.on('hide.bs.dropdown', this.onDropDownHider);
     this.$element.on('hidden.bs.dropdown', this.onDropDownHiddener);
-    this.$element.on('focus', this.onFocuser);
     this.$element.on('blur', this.onBlurer);
-    this.$element.on('keydown', this.onKeyDowner);
     this.$element.on('keyup', this.onKeyUper);
     if (lib.isVal(this.getConfigVal('value'))) {
       this.set('value', this.getConfigVal('value'));
@@ -298,17 +287,20 @@ function createCustomSelect (execlib, applib, mylib) {
     this.list.find('li').show();
   };
 
-  CustomSelectElement.prototype.onFocus = function () {
+  CustomSelectElement.prototype.onFocus = function (evnt) {
+    TextInputWithListElement.prototype.onFocus.call(this, evnt);
     lib.runNext(this.dropdown.show.bind(this.dropdown), 150);
     this.$element.select();
   };
-  CustomSelectElement.prototype.onBlur = function () {
+  CustomSelectElement.prototype.onBlur = function (evnt) {
+    TextInputWithListElement.prototype.onBlur.call(this, evnt);
     lib.runNext(this.dropdown.hide.bind(this.dropdown), 300);
   };
   CustomSelectElement.prototype.showAllOptions = function () {
     jqhelpers.jQueryForEach(this.list, 'li', function(li) {jQuery(li).show();});
   };
   CustomSelectElement.prototype.onKeyDown = function (evnt) {
+    TextInputWithListElement.prototype.onKeyDown.call(this, evnt);
     if (evnt && evnt.originalEvent) {
       //console.log ('down', evnt.originalEvent.keyCode, evnt.originalEvent.key)
     }
@@ -977,6 +969,16 @@ function createServerLookup (execlib, applib, mylib) {
     this.initiallyFilled = null;
     TextInputWithListElement.prototype.__cleanUp.call(this);
   };
+  ServerLookupElement.prototype.onFocus = function (evnt) {
+    TextInputWithListElement.prototype.onFocus.call(this, evnt);
+    this.needLookup.fire(this.get('value'));
+  };
+
+  ServerLookupElement.prototype.erroneousAction = function () {
+    this.set('chosenProposal', null);
+    this.set('value', null);
+    lib.runNext(this.$element.focus.bind(this.$element));
+  };
   ServerLookupElement.prototype.fillList = function (rawitems) {
     var currval;
     if (!this.initiallyFilled) {
@@ -985,10 +987,13 @@ function createServerLookup (execlib, applib, mylib) {
       currval = this.get('value');
       if (lib.isVal(currval)) {
         lib.runNext(this.needLookup.fire.bind(this.needLookup, currval));
+        currval = null;
       }
     }
     TextInputWithListElement.prototype.fillList.call(this, rawitems);
-    this.dropdown.show();
+    if (lib.isArray(rawitems) && rawitems.length>0) {
+      lib.runNext(this.dropdown.show.bind(this.dropdown));
+    }
   };
   ServerLookupElement.prototype.processTextInput = function (val) {
     if (val) {
@@ -996,6 +1001,14 @@ function createServerLookup (execlib, applib, mylib) {
       return;
     }
     this.clearList();
+  };
+  ServerLookupElement.prototype.makeUpOption = function (desc, rawitem) {
+    var ret = TextInputWithListElement.prototype.makeUpOption.call(this, desc, rawitem);
+    var val = this.get('value');
+    if (this.rawDataToTextInputValue(rawitem) == val) {
+      desc.class.push('active');
+    }
+    return ret;
   };
   ServerLookupElement.prototype.makeUseOfChosenItemData = function (data) {
     var ret = TextInputWithListElement.prototype.makeUseOfChosenItemData.call(this, data);
@@ -1135,20 +1148,27 @@ function createTextInputWithList (execlib, applib, mylib) {
     this.listContainer = null;
     this.list = null;
     this.rawItemsToFillIn = null;
-    this.keyDowner = this.onTextInputWithListElementKeyDown.bind(this);
+    this.keyDowner = this.onKeyDown.bind(this);
     this.itemChooser = this.chooseItem.bind(this);
     this.onClickeder = this.onClicked.bind(this);
-    this.onTextInputWithListElementBlurer = this.onTextInputWithListElementBlur.bind(this);
+    this.onHider = this.onHide.bind(this);
+    this.onFocuser = this.onFocus.bind(this);
+    this.onBlurer = this.onBlur.bind(this);
+    this.dropDownOn = false;
   }
   lib.inherit(TextInputWithListElement, WebElement);
   DataHolderMixin.addMethods(TextInputWithListElement);
   TextInputWithListElement.prototype.__cleanUp = function () {
     if (this.$element && this.waiter) {
-      this.$element.off('blur', this.onTextInputWithListElementBlurer);
+      this.$element.off('blur', this.onBlurer);
+      this.$element.off('focus', this.onFocuser);
       this.$element.off('keydown', this.keyDowner);
+      this.$element.off('hide.bs.dropdown', this.onHider);
       this.$element.off('show.bs.dropdown', this.onClickeder);
     }
-    this.onTextInputWithListElementBlurer = null;
+    this.dropDownOn = false;
+    this.onBlurer = null;
+    this.onFocuser = null;
     this.onClickeder = null;
     this.itemChooser = null;
     this.keyDowner = null;
@@ -1195,10 +1215,12 @@ function createTextInputWithList (execlib, applib, mylib) {
     this.dropdown = new bootstrap.Dropdown(this.$element[0], {autoClose:false});
     this.$element.on('keydown', this.keyDowner);
     this.$element.on('show.bs.dropdown', this.onClickeder);
-    this.$element.on('blur', this.onTextInputWithListElementBlurer);
+    this.$element.on('hide.bs.dropdown', this.onHider);
+    this.$element.on('focus', this.onFocuser);
+    this.$element.on('blur', this.onBlurer);
   };
   TextInputWithListElement.prototype.processWaiter = function () {
-    if (!(this.$element && this.$element.length>0 && this.needLookup)){
+    if (!(this.$element && this.$element.length>0)){
       return;
     }
     this.processTextInput(this.$element.val());
@@ -1317,7 +1339,7 @@ function createTextInputWithList (execlib, applib, mylib) {
     this.list.empty();
   };
 
-  TextInputWithListElement.prototype.onTextInputWithListElementKeyDown = function (evnt) {
+  TextInputWithListElement.prototype.onKeyDown = function (evnt) {
     var code = (evnt && evnt.originalEvent) ? evnt.originalEvent.code : null;
     switch (code) {
       case 'ArrowUp':
@@ -1363,9 +1385,16 @@ function createTextInputWithList (execlib, applib, mylib) {
   };
 
   TextInputWithListElement.prototype.onClicked = function (evnt) {
+    this.dropDownOn = true;
     this.clicked.fire([evnt, null]); //compatible with ClickableElement
   };
-  TextInputWithListElement.prototype.onTextInputWithListElementBlur = function (evnt) {
+  TextInputWithListElement.prototype.onHide = function (evnt) {
+    this.dropDownOn = false;
+  };
+  TextInputWithListElement.prototype.onFocus = function (evnt) {
+
+  };
+  TextInputWithListElement.prototype.onBlur = function (evnt) {
     var active;
     if (!this.list) {return;}
     active = this.list.find('li.active');
@@ -1384,6 +1413,7 @@ function createTextInputWithList (execlib, applib, mylib) {
     evnt.preventDefault();
     evnt.stopPropagation();
     this.makeUseOfElement(active);
+    this.dropdown.hide();
   };
   TextInputWithListElement.prototype.makeUseOfElement = function (element) {
     var data;

@@ -82,20 +82,27 @@ function createTextInputWithList (execlib, applib, mylib) {
     this.listContainer = null;
     this.list = null;
     this.rawItemsToFillIn = null;
-    this.keyDowner = this.onTextInputWithListElementKeyDown.bind(this);
+    this.keyDowner = this.onKeyDown.bind(this);
     this.itemChooser = this.chooseItem.bind(this);
     this.onClickeder = this.onClicked.bind(this);
-    this.onTextInputWithListElementBlurer = this.onTextInputWithListElementBlur.bind(this);
+    this.onHider = this.onHide.bind(this);
+    this.onFocuser = this.onFocus.bind(this);
+    this.onBlurer = this.onBlur.bind(this);
+    this.dropDownOn = false;
   }
   lib.inherit(TextInputWithListElement, WebElement);
   DataHolderMixin.addMethods(TextInputWithListElement);
   TextInputWithListElement.prototype.__cleanUp = function () {
     if (this.$element && this.waiter) {
-      this.$element.off('blur', this.onTextInputWithListElementBlurer);
+      this.$element.off('blur', this.onBlurer);
+      this.$element.off('focus', this.onFocuser);
       this.$element.off('keydown', this.keyDowner);
+      this.$element.off('hide.bs.dropdown', this.onHider);
       this.$element.off('show.bs.dropdown', this.onClickeder);
     }
-    this.onTextInputWithListElementBlurer = null;
+    this.dropDownOn = false;
+    this.onBlurer = null;
+    this.onFocuser = null;
     this.onClickeder = null;
     this.itemChooser = null;
     this.keyDowner = null;
@@ -142,10 +149,12 @@ function createTextInputWithList (execlib, applib, mylib) {
     this.dropdown = new bootstrap.Dropdown(this.$element[0], {autoClose:false});
     this.$element.on('keydown', this.keyDowner);
     this.$element.on('show.bs.dropdown', this.onClickeder);
-    this.$element.on('blur', this.onTextInputWithListElementBlurer);
+    this.$element.on('hide.bs.dropdown', this.onHider);
+    this.$element.on('focus', this.onFocuser);
+    this.$element.on('blur', this.onBlurer);
   };
   TextInputWithListElement.prototype.processWaiter = function () {
-    if (!(this.$element && this.$element.length>0 && this.needLookup)){
+    if (!(this.$element && this.$element.length>0)){
       return;
     }
     this.processTextInput(this.$element.val());
@@ -264,7 +273,7 @@ function createTextInputWithList (execlib, applib, mylib) {
     this.list.empty();
   };
 
-  TextInputWithListElement.prototype.onTextInputWithListElementKeyDown = function (evnt) {
+  TextInputWithListElement.prototype.onKeyDown = function (evnt) {
     var code = (evnt && evnt.originalEvent) ? evnt.originalEvent.code : null;
     switch (code) {
       case 'ArrowUp':
@@ -310,9 +319,16 @@ function createTextInputWithList (execlib, applib, mylib) {
   };
 
   TextInputWithListElement.prototype.onClicked = function (evnt) {
+    this.dropDownOn = true;
     this.clicked.fire([evnt, null]); //compatible with ClickableElement
   };
-  TextInputWithListElement.prototype.onTextInputWithListElementBlur = function (evnt) {
+  TextInputWithListElement.prototype.onHide = function (evnt) {
+    this.dropDownOn = false;
+  };
+  TextInputWithListElement.prototype.onFocus = function (evnt) {
+
+  };
+  TextInputWithListElement.prototype.onBlur = function (evnt) {
     var active;
     if (!this.list) {return;}
     active = this.list.find('li.active');
@@ -331,6 +347,7 @@ function createTextInputWithList (execlib, applib, mylib) {
     evnt.preventDefault();
     evnt.stopPropagation();
     this.makeUseOfElement(active);
+    this.dropdown.hide();
   };
   TextInputWithListElement.prototype.makeUseOfElement = function (element) {
     var data;

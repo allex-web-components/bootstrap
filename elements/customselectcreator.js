@@ -18,9 +18,6 @@ function createCustomSelect (execlib, applib, mylib) {
     this.onDropDownShowner = this.onDropDownShown.bind(this);
     this.onDropDownHider = this.onDropDownHide.bind(this);
     this.onDropDownHiddener = this.onDropDownHidden.bind(this);
-    this.onFocuser = this.onFocus.bind(this);
-    this.onBlurer = this.onBlur.bind(this);
-    this.onKeyDowner = this.onKeyDown.bind(this);
     this.onKeyUper = this.onKeyUp.bind(this);
 
     this.value0 = null;
@@ -38,9 +35,6 @@ function createCustomSelect (execlib, applib, mylib) {
       this.$element.off('show.bs.dropdown', this.onDropDownShower);
       this.$element.off('hide.bs.dropdown', this.onDropDownHider);
       this.$element.off('hidden.bs.dropdown', this.onDropDownHiddener);
-      this.$element.off('blur', this.onBlurer);
-      this.$element.off('focus', this.onFocuser);
-      this.$element.off('keydown', this.onKeyDowner);
       this.$element.off('keyup', this.onKeyUper);
     }
     this.value3 = null;
@@ -48,9 +42,6 @@ function createCustomSelect (execlib, applib, mylib) {
     this.value1 = null;
     this.value0 = null;
     this.onKeyUper = null;
-    this.onKeyDowner = null;
-    this.onBlurer = null;
-    this.onFocuser = null;
     this.onDropDownHiddener = null;
     this.onDropDownHider = null;
     this.onDropDownShowner = null;
@@ -268,9 +259,7 @@ function createCustomSelect (execlib, applib, mylib) {
     this.$element.on('shown.bs.dropdown', this.onDropDownShowner);
     this.$element.on('hide.bs.dropdown', this.onDropDownHider);
     this.$element.on('hidden.bs.dropdown', this.onDropDownHiddener);
-    this.$element.on('focus', this.onFocuser);
     this.$element.on('blur', this.onBlurer);
-    this.$element.on('keydown', this.onKeyDowner);
     this.$element.on('keyup', this.onKeyUper);
     if (lib.isVal(this.getConfigVal('value'))) {
       this.set('value', this.getConfigVal('value'));
@@ -297,17 +286,20 @@ function createCustomSelect (execlib, applib, mylib) {
     this.list.find('li').show();
   };
 
-  CustomSelectElement.prototype.onFocus = function () {
+  CustomSelectElement.prototype.onFocus = function (evnt) {
+    TextInputWithListElement.prototype.onFocus.call(this, evnt);
     lib.runNext(this.dropdown.show.bind(this.dropdown), 150);
     this.$element.select();
   };
-  CustomSelectElement.prototype.onBlur = function () {
+  CustomSelectElement.prototype.onBlur = function (evnt) {
+    TextInputWithListElement.prototype.onBlur.call(this, evnt);
     lib.runNext(this.dropdown.hide.bind(this.dropdown), 300);
   };
   CustomSelectElement.prototype.showAllOptions = function () {
     jqhelpers.jQueryForEach(this.list, 'li', function(li) {jQuery(li).show();});
   };
   CustomSelectElement.prototype.onKeyDown = function (evnt) {
+    TextInputWithListElement.prototype.onKeyDown.call(this, evnt);
     if (evnt && evnt.originalEvent) {
       //console.log ('down', evnt.originalEvent.keyCode, evnt.originalEvent.key)
     }

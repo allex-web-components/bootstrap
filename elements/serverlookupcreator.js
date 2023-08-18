@@ -23,6 +23,16 @@ function createServerLookup (execlib, applib, mylib) {
     this.initiallyFilled = null;
     TextInputWithListElement.prototype.__cleanUp.call(this);
   };
+  ServerLookupElement.prototype.onFocus = function (evnt) {
+    TextInputWithListElement.prototype.onFocus.call(this, evnt);
+    this.needLookup.fire(this.get('value'));
+  };
+
+  ServerLookupElement.prototype.erroneousAction = function () {
+    this.set('chosenProposal', null);
+    this.set('value', null);
+    lib.runNext(this.$element.focus.bind(this.$element));
+  };
   ServerLookupElement.prototype.fillList = function (rawitems) {
     var currval;
     if (!this.initiallyFilled) {
@@ -31,10 +41,13 @@ function createServerLookup (execlib, applib, mylib) {
       currval = this.get('value');
       if (lib.isVal(currval)) {
         lib.runNext(this.needLookup.fire.bind(this.needLookup, currval));
+        currval = null;
       }
     }
     TextInputWithListElement.prototype.fillList.call(this, rawitems);
-    this.dropdown.show();
+    if (lib.isArray(rawitems) && rawitems.length>0) {
+      lib.runNext(this.dropdown.show.bind(this.dropdown));
+    }
   };
   ServerLookupElement.prototype.processTextInput = function (val) {
     if (val) {
@@ -42,6 +55,14 @@ function createServerLookup (execlib, applib, mylib) {
       return;
     }
     this.clearList();
+  };
+  ServerLookupElement.prototype.makeUpOption = function (desc, rawitem) {
+    var ret = TextInputWithListElement.prototype.makeUpOption.call(this, desc, rawitem);
+    var val = this.get('value');
+    if (this.rawDataToTextInputValue(rawitem) == val) {
+      desc.class.push('active');
+    }
+    return ret;
   };
   ServerLookupElement.prototype.makeUseOfChosenItemData = function (data) {
     var ret = TextInputWithListElement.prototype.makeUseOfChosenItemData.call(this, data);
