@@ -56,14 +56,6 @@ function createServerLookup (execlib, applib, mylib) {
     }
     this.clearList();
   };
-  ServerLookupElement.prototype.makeUpOption = function (desc, rawitem) {
-    var ret = TextInputWithListElement.prototype.makeUpOption.call(this, desc, rawitem);
-    var val = this.get('value');
-    if (this.rawDataToTextInputValue(rawitem) == val) {
-      desc.class.push('active');
-    }
-    return ret;
-  };
   ServerLookupElement.prototype.makeUseOfChosenItemData = function (data) {
     var ret = TextInputWithListElement.prototype.makeUseOfChosenItemData.call(this, data);
     this.set('chosenProposal', data);

@@ -234,6 +234,10 @@ function createTextInputWithList (execlib, applib, mylib) {
     return res;
   };
   TextInputWithListElement.prototype.makeUpOption = function (desc, rawitem) {
+    var val = this.get('value');
+    if (this.rawDataToTextInputValue(rawitem) == val) {
+      desc.class.push('active');
+    }
     desc.contents = this.rawItemToText(rawitem);
     desc.attrib.data = JSON.stringify(rawitem);
   };
@@ -374,7 +378,7 @@ function createTextInputWithList (execlib, applib, mylib) {
     target = target4direction(this.list, active, direction);
     if (target && target.length>0) {
       active.removeClass('active');
-      target.addClass('active');
+      target.first().addClass('active');
       target[0].scrollIntoView();
 
     }
@@ -383,11 +387,11 @@ function createTextInputWithList (execlib, applib, mylib) {
     if (!(active && active.length>0)) {
       return direction>0
       ?
-      list.find('li:first')
+      list.find('li:visible:first')
       :
-      list.find('li:last');
+      list.find('li:visible:last');
     }
-    return direction>0 ? active.next() : active.prev();
+    return direction>0 ? active.nextAll(':visible') : active.prevAll(':visible');
   }
 
   TextInputWithListElement.prototype.postInitializationMethodNames = TextInputWithListElement.prototype.postInitializationMethodNames.concat(['prepareTextInput']);

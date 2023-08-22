@@ -268,6 +268,23 @@ function createCustomSelect (execlib, applib, mylib) {
       this.set('options', this.options.slice());
     }
   };
+  CustomSelectElement.prototype.actualEnvironmentDescriptor = function (myname) {
+    var optionsfetcher = this.getConfigVal('optionsfetcher');
+    var environmentname = this.getConfigVal('environmentname');
+    var ret = TextInputWithListElement.prototype.actualEnvironmentDescriptor.call(this, name) || {};
+    if (optionsfetcher && environmentname) {
+      ret.logic = ret.logic || [];
+      ret.logic.push({
+        triggers: 'environment.'+environmentname+':state',
+        references: '.>'+optionsfetcher,
+        handler: this.fetchRemoteOptions.bind(this)
+      },{
+        triggers: '.>'+optionsfetcher,
+        handler: this.onRemoteOptionsFetcher.bind(this)
+      });
+    }
+    return ret;
+  };
   CustomSelectElement.prototype.onDropDownShow = function (evntignored) {
     this.listContainer.width(this.$element.outerWidth());
   };
@@ -300,14 +317,17 @@ function createCustomSelect (execlib, applib, mylib) {
   };
   CustomSelectElement.prototype.onKeyDown = function (evnt) {
     TextInputWithListElement.prototype.onKeyDown.call(this, evnt);
-    if (evnt && evnt.originalEvent) {
-      //console.log ('down', evnt.originalEvent.keyCode, evnt.originalEvent.key)
-    }
   };
   CustomSelectElement.prototype.onKeyUp = function (evnt) {
-    var txtval, txtlower;
+    var txtval, txtlower, option;
     if (evnt && evnt.originalEvent) {
       //console.log('up', evnt.originalEvent.keyCode, evnt.originalEvent.key);
+      if (evnt.originalEvent.key.length==1) {
+        option = this.optionThatCorrespondsToValue(this.$element.val());
+        if (option) {
+          console.log('option', option);
+        }
+      }
       if (evnt.originalEvent.key.length>1) {
         switch (evnt.originalEvent.key) {
           case 'Enter':
@@ -380,6 +400,31 @@ function createCustomSelect (execlib, applib, mylib) {
     var listtop = this.list.offset().top;
     var chosentop = jQuery(chosen).offset().top;
     this.listContainer[0].scrollTop = chosentop - listtop;
+  };
+
+  CustomSelectElement.prototype.fetchRemoteOptions = function (fetcher, state) {
+    if (state !== 'established') {
+      return;
+    }
+    if (lib.isFunction(fetcher)) {
+      try {
+        fetcher(this.callArrayForRemoteOptionsFetcher());
+      } catch (e) {
+        this.$element.val(e.message);
+      }
+    }
+  };
+  CustomSelectElement.prototype.callArrayForRemoteOptionsFetcher = function () {
+    return [];
+  };
+  CustomSelectElement.prototype.onRemoteOptionsFetcher = function (func) {
+    if (!func) { return; }
+    if (func.running) {
+      this.$element.prop('disabled', true);
+      return;
+    }
+    this.$element.prop('disabled', false);
+    this.set('options', func.result||[]);
   };
 
   function valueOfData (data, dflt, valuepath) {
