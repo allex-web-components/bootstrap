@@ -178,9 +178,6 @@ function createCustomSelect (execlib, applib, mylib) {
     if (this.itemFoundFromExistingValue && this.itemFoundFromExistingValue.li) {
       this.itemFoundFromExistingValue.li.classList.add('active');
     }
-    this.chooseItem({
-      target: this.optionThatCorrespondsToValue(this.value)
-    });    
   }
   CustomSelectElement.prototype.onListFilled = function () {
     var options;
@@ -201,6 +198,13 @@ function createCustomSelect (execlib, applib, mylib) {
       default:
         setValueKeep.call(this);
         break;
+    }
+    this.chooseItem({
+      target: this.optionThatCorrespondsToValue(this.value)
+    });
+    if (this.getConfigVal('focusonnewoptions')) {
+      this.$element.prop('disabled', false);
+      this.$element.trigger('focus');
     }
   };
 
