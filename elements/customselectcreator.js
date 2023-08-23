@@ -259,7 +259,6 @@ function createCustomSelect (execlib, applib, mylib) {
     this.$element.on('shown.bs.dropdown', this.onDropDownShowner);
     this.$element.on('hide.bs.dropdown', this.onDropDownHider);
     this.$element.on('hidden.bs.dropdown', this.onDropDownHiddener);
-    this.$element.on('blur', this.onBlurer);
     this.$element.on('keyup', this.onKeyUper);
     if (lib.isVal(this.getConfigVal('value'))) {
       this.set('value', this.getConfigVal('value'));
@@ -309,8 +308,10 @@ function createCustomSelect (execlib, applib, mylib) {
     this.$element.select();
   };
   CustomSelectElement.prototype.onBlur = function (evnt) {
-    TextInputWithListElement.prototype.onBlur.call(this, evnt);
-    lib.runNext(this.dropdown.hide.bind(this.dropdown), 300);
+    var ret = TextInputWithListElement.prototype.onBlur.call(this, evnt);
+    if (ret) {
+      lib.runNext(this.dropdown.hide.bind(this.dropdown), 300);
+    }
   };
   CustomSelectElement.prototype.showAllOptions = function () {
     jqhelpers.jQueryForEach(this.list, 'li', function(li) {jQuery(li).show();});
