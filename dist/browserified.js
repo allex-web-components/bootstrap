@@ -1186,6 +1186,7 @@ function createTextInputWithList (execlib, applib, mylib) {
     WebElement.prototype.__cleanUp.call(this);
   };
   TextInputWithListElement.prototype.prepareTextInput = function () {
+    var config, dropdownboundaryselector, dropdownboundary;
     this.$element.attr('spellcheck', !!this.getConfigVal('spellcheck'));
     this.$element.parent().addClass('dropdown');
     this.$element.addClass('dropdown-toggle');
@@ -1207,7 +1208,15 @@ function createTextInputWithList (execlib, applib, mylib) {
     });
     this.listContainer.append(this.list);
     this.listContainer.insertAfter(this.$element);
-    this.dropdown = new bootstrap.Dropdown(this.$element[0], {autoClose:false});
+    config = {autoClose:false, popperConfig: {strategy: 'fixed'}};
+    dropdownboundaryselector = this.getConfigVal('dropdownboundaryselector');
+    if (dropdownboundaryselector) {
+      dropdownboundary = jQuery(dropdownboundaryselector);
+      if (dropdownboundary && dropdownboundary.length>0) {
+        config.boundary = dropdownboundary[0];
+      }
+    }
+    this.dropdown = new bootstrap.Dropdown(this.$element[0], config);
     this.$element.on('keydown', this.keyDowner);
     this.$element.on('show.bs.dropdown', this.onClickeder);
     this.$element.on('hide.bs.dropdown', this.onHider);
@@ -1432,8 +1441,7 @@ function createTextInputWithList (execlib, applib, mylib) {
     if (target && target.length>0) {
       active.removeClass('active');
       target.first().addClass('active');
-      target[0].scrollIntoView();
-
+      target[0].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
     }
   };
   function target4direction (list, active, direction) {
