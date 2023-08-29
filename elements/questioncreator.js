@@ -6,6 +6,9 @@ function createQuestion(execlib, applib, mylib) {
     PopUpElement = applib.getElementType('PopUp');
 
   function QuestionElement(id, options) {
+    options = options || {};
+    options.modalmarkup = options.modalmarkup || {};
+    options.modalmarkup.nodefaultclose = true;
     PopUpElement.call(this, id, options);
   }
   lib.inherit(QuestionElement, PopUpElement);
