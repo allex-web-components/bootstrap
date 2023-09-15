@@ -236,8 +236,11 @@ function createCustomSelect (execlib, applib, mylib) {
     this.chooseItem({
       target: this.optionThatCorrespondsToValue(this.value)
     });
+    /*
     lib.runNext(setArrayValues.bind(this, selval));
     selval = null;
+    */
+    setArrayValues.call(this, selval);
     return true;
   };
 
