@@ -11,6 +11,25 @@ function createQuestionMarkups (lib, o, m, mylib) {
     );
   }
 
+  function questionWithInputBodyCreator (config) {
+    var caption;
+    config = config || {};
+    caption = config.caption;
+    return o(m.div,
+      'CLASS', 'questionbody',
+      'CONTENTS', [
+        o(m.div
+          , 'CLASS', 'mb-2'
+          , 'CONTENTS', caption
+        ),
+        o(m[(config.inputtype||'text')+'input']
+          , 'CLASS', 'form-control justtext'
+          , 'ATTRS', config.inputattrs||''
+        )
+      ]
+    );
+  }
+
   function questionButtonsCreator (buttondescriptors) {
     return buttondescriptors.map(function (butdesc) {
       return o(m.button,
@@ -22,6 +41,7 @@ function createQuestionMarkups (lib, o, m, mylib) {
   }
 
   mylib.questionBodyCreator = questionBodyCreator;
+  mylib.questionWithInputBodyCreator = questionWithInputBodyCreator;
   mylib.questionButtonsCreator = questionButtonsCreator;
 }
 module.exports = createQuestionMarkups;
