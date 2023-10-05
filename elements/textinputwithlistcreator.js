@@ -143,17 +143,6 @@ function createTextInputWithList (execlib, applib, mylib) {
     //lib.runNext(this.onListFilled.bind(this));
   }
   //static end
-  //should go to lib
-  function hashReducer (rdcobj, val, key) {
-    rdcobj.seed = rdcobj.func(rdcobj.seed, val, key);
-  }
-  function reduceHash (h, func, seed) {
-    var seedobj = {seed: seed, func: func}, ret;
-    lib.traverseShallow(h, hashReducer.bind(null, seedobj));
-    ret = seedobj.seed;
-    return ret;
-  }
-  //endof should go to lib
   function csser (res, val, key) {
     return lib.joinStringsWith(res, key+':'+val+';', '');
   }
@@ -172,8 +161,8 @@ function createTextInputWithList (execlib, applib, mylib) {
       contents: ''
     };
     this.makeUpOption(desc, rawitem);
-    var finalcss = reduceHash(desc.css, csser, '');
-    var finalattrs = reduceHash(desc.attrib, attriber, '');
+    var finalcss = lib.reduceShallow(desc.css, csser, '');
+    var finalattrs = lib.reduceShallow(desc.attrib, attriber, '');
     res = lib.joinStringsWith(res, o(m.li
       , 'CLASS', desc.class.join(' ')
       , 'ATTRS', 'style="'+finalcss+'" '+finalattrs
