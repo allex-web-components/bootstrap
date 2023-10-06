@@ -47,6 +47,14 @@ function createQuestion(execlib, applib, mylib) {
         }
       }],
       logic: [{
+        triggers: 'element.'+myname+':actual',
+        references: 'element.'+myname,
+        handler: function (me, actual) {
+          if (actual) {
+            me.$element.find('input').focus();
+          }
+        }
+      },{
         triggers: 'element.'+myname+'.Input:value',
         references: [
           'element.'+myname+'.Ok',
@@ -59,6 +67,9 @@ function createQuestion(execlib, applib, mylib) {
           'element.'+myname+'.Input'
         ].join(','),
         handler: okcancelwithinputhandler.onOk.bind(okcancelwithinputhandler)
+      },{
+        triggers: 'element.'+myname+'.Cancel!clicked',
+        handler: okcancelwithinputhandler.onCancel.bind(okcancelwithinputhandler)
       }]
     };
     okcancelwithinputhandler = null;
@@ -200,6 +211,9 @@ function createQuestion(execlib, applib, mylib) {
   };
   OkCancelWithInputHandler.prototype.onOk = function (input, clickignored) {
     this.resolverWith(input.get('value'));
+  };
+  OkCancelWithInputHandler.prototype.onCancel = function (clickignored) {
+    this.resolverWith(null);
   };
   OkCancelWithInputHandler.prototype.onValue = function (okbutton, cancelbutton, val) {
     if (this.config && this.config.inputregexvalidation) {
