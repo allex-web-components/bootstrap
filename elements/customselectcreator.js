@@ -138,9 +138,6 @@ function createCustomSelect (execlib, applib, mylib) {
     if (!optdata) {
       return;
     }
-    if (this.id == 'From') {
-      console.log('htmlvalue will be', this.rawDataToTextInputValue(optdata.data));
-    }
     this.set('htmlvalue', this.rawDataToTextInputValue(optdata.data));
     optdata.li.classList.add('active');
   };
@@ -155,9 +152,6 @@ function createCustomSelect (execlib, applib, mylib) {
   }
   function setValueFirst () {
     var options = this.get('options');
-    if (this.id == 'From') {
-      console.log('value will be', (lib.isArray(options) && options.length>0) ? valueOfData(options[0], void 0, this.getConfigVal('valuepath')) : null);
-    }
     this.set('value', (lib.isArray(options) && options.length>0) ? valueOfData(options[0], void 0, this.getConfigVal('valuepath')) : null);
   }
   function setValueFirstIfNotVal () {
