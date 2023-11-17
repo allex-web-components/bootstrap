@@ -332,6 +332,22 @@ function createCustomSelect (execlib, applib, mylib) {
       }
       if (evnt.originalEvent.key.length>1) {
         switch (evnt.originalEvent.key) {
+          case 'Delete':
+          case 'Backspace':
+            if (this.get('htmlvalue')) {
+              break;
+            }
+            option = this.optionThatCorrespondsToValue(null);
+            if (option) {
+              this.set('value', null);
+              break;
+            }
+            option = this.optionThatCorrespondsToValue('');
+            if (option) {
+              this.set('value', '');
+              break;
+            }
+            break;
           case 'Enter':
             this.showAllOptions();
             this.$element.val(this.textThatCorrespondsToValue(this.get('value')));
@@ -362,7 +378,13 @@ function createCustomSelect (execlib, applib, mylib) {
     return ret;
   };
   CustomSelectElement.prototype.optionTextLowerContains = function (txt, li) {
-    return li.innerHTML.toLowerCase().indexOf(txt)>=0;
+    var lchtml = li.innerHTML.toLowerCase(), ret;
+    if (!lchtml && !txt) {
+      return true;
+    }
+    ret = lchtml.indexOf(txt)>=0;
+    //console.log(lchtml, txt, '=>', ret);
+    return ret;
   };
 
   CustomSelectElement.prototype.showAllOptions = function () {
