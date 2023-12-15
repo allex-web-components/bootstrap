@@ -10,6 +10,7 @@
       "allex:htmltemplates:lib",
       "allex:svgtemplates:lib",
       "allex:bufferedtrigger:lib",
+      "allex:form:webcomponent",
       "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"
     ],
     "css": [
