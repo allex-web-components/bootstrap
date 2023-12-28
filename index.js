@@ -8,6 +8,7 @@
   mylib.markups = require('./markup')(execlib);
   mylib.jobs = require('./jobs')(execlib);
   require('./elements')(execlib, applib, mylib);
+  require('./fields')(execlib, lR, applib, mylib);
 
   lR.register('allex_bootstrapwebcomponent', mylib);
 })(ALLEX)

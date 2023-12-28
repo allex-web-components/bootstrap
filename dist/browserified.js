@@ -1694,6 +1694,88 @@ function createToast (execlib, applib, mylib) {
 }
 module.exports = createToast;
 },{}],12:[function(require,module,exports){
+function createCustomSelectField (lib, lR, applib) {
+  'use strict';
+
+  var formlib = lR.get('allex_formwebcomponent');
+  var CustomSelectElement = applib.getElementType('CustomSelect');
+  var mixins = formlib.mixins,
+  FieldBaseMixin = mixins.FieldBase,
+  TextFromHashMixin = mixins.TextFromHash,
+  DataHolderMixin = mixins.DataHolder;
+  
+  function CustomSelectFieldElement (id, options) {
+    options = options || {};
+    options.text_is_value = true;
+    CustomSelectElement.call(this, id, options);
+    FieldBaseMixin.call(this, options);
+    TextFromHashMixin.call(this, options);
+    DataHolderMixin.call(this, options);
+    this.setValidity();
+  }
+  lib.inherit(CustomSelectFieldElement, CustomSelectElement);
+  FieldBaseMixin.addMethods(CustomSelectElement);
+  DataHolderMixin.addMethods(CustomSelectElement);
+  TextFromHashMixin.addMethods(CustomSelectElement);
+  CustomSelectFieldElement.prototype.__cleanUp = function () {
+    DataHolderMixin.prototype.destroy.call(this);
+    TextFromHashMixin.prototype.destroy.call(this);
+    FieldBaseMixin.prototype.destroy.call(this);
+    CustomSelectElement.prototype.__cleanUp.call(this);
+  };
+  CustomSelectFieldElement.prototype.set_data = function (data) {
+    var fieldname, enabledfieldname, optionsfieldname, val;
+    fieldname = this.getConfigVal('hashfield');
+    enabledfieldname = this.getConfigVal('hashenabledfield');
+    optionsfieldname = this.getConfigVal('hashoptionsfield');
+    this.setDataReceived();
+    if (data) {
+      if (fieldname) {
+        val = lib.readPropertyFromDotDelimitedString(data, fieldname);
+      }
+      if (enabledfieldname) {
+        this.set('enabled', lib.readPropertyFromDotDelimitedString(data, enabledfieldname));
+      }
+      if (optionsfieldname) {
+        this.set('options', lib.readPropertyFromDotDelimitedString(data, optionsfieldname));
+      }
+    }
+    this.set('value', val);
+    return true;
+  };
+  CustomSelectFieldElement.prototype.set_value = function (val) {
+    var ret;
+    this.setDataReceived();
+    ret = CustomSelectElement.prototype.set_value.call(this, val);
+    this.setValidity(val);
+    return ret;
+  };
+  CustomSelectFieldElement.prototype.isValueValid = function (val) {
+    if (!this.get('required')) {
+      return true;
+    }
+    console.log('koj moj je val?', val);
+    return lib.isVal(val);
+  };
+  CustomSelectFieldElement.prototype.actualEnvironmentDescriptor = function (myname) {
+    this.setValidity(this.get('value'));
+    return lib.extendWithConcat(CustomSelectElement.prototype.actualEnvironmentDescriptor.call(this, myname)||{}, {
+    });
+  };
+  
+  applib.registerElementType('CustomSelectField', CustomSelectFieldElement);
+}
+module.exports = createCustomSelectField;
+},{}],13:[function(require,module,exports){
+function createFields (execlib, lR, applib, mylib) {
+  'use strict';
+
+  var lib = execlib.lib;
+
+  require('./customselectfield')(lib, lR, applib);
+}
+module.exports = createFields;
+},{"./customselectfield":12}],14:[function(require,module,exports){
 (function (execlib) {
   var lib = execlib.lib,
     lR = execlib.execSuite.libRegistry,
@@ -1704,11 +1786,12 @@ module.exports = createToast;
   mylib.markups = require('./markup')(execlib);
   mylib.jobs = require('./jobs')(execlib);
   require('./elements')(execlib, applib, mylib);
+  require('./fields')(execlib, lR, applib, mylib);
 
   lR.register('allex_bootstrapwebcomponent', mylib);
 })(ALLEX)
 
-},{"./elements":3,"./jobs":13,"./markup":20,"./mixins":24}],13:[function(require,module,exports){
+},{"./elements":3,"./fields":13,"./jobs":15,"./markup":22,"./mixins":26}],15:[function(require,module,exports){
 function createJobs (execlib) {
   'use strict';
   var mylib = {
@@ -1718,7 +1801,7 @@ function createJobs (execlib) {
   return mylib;
 }
 module.exports = createJobs;
-},{"./question2function":16}],14:[function(require,module,exports){
+},{"./question2function":18}],16:[function(require,module,exports){
 function createQuestion2FunctionJobBase (lib, mylib) {
   'use strict';
 
@@ -1764,7 +1847,7 @@ function createQuestion2FunctionJobBase (lib, mylib) {
   mylib.Question2Function = Question2FunctionJob;
 }
 module.exports = createQuestion2FunctionJobBase;
-},{}],15:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 function createFormQuestion2FunctionJob (applib, lib, mylib) {
   'use strict';
 
@@ -1866,7 +1949,7 @@ function createFormQuestion2FunctionJob (applib, lib, mylib) {
   mylib.Form = FormQuestion2FunctionJob;
 }
 module.exports = createFormQuestion2FunctionJob;
-},{}],16:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 function createQuestion2FunctionJobs (execlib) {
   'use strict';
 
@@ -1883,7 +1966,7 @@ function createQuestion2FunctionJobs (execlib) {
 
 }
 module.exports = createQuestion2FunctionJobs;
-},{"./basecreator":14,"./formcreator":15,"./paramcreator":17,"./predefinedcreator":18,"./simpleinputcreator":19}],17:[function(require,module,exports){
+},{"./basecreator":16,"./formcreator":17,"./paramcreator":19,"./predefinedcreator":20,"./simpleinputcreator":21}],19:[function(require,module,exports){
 function createParamQuestion2FunctionJob (lib, mylib) {
   'use strict';
   var Question2FunctionJob = mylib.Question2Function;
@@ -1919,7 +2002,7 @@ function createParamQuestion2FunctionJob (lib, mylib) {
   mylib.Param = ParamQuestion2FunctionJob;
 }
 module.exports = createParamQuestion2FunctionJob;
-},{}],18:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 function createQuestion2PredefinedFunctionJob (lib, mylib) {
   'use strict';
   var Question2FunctionJob = mylib.Question2Function;
@@ -1949,7 +2032,7 @@ function createQuestion2PredefinedFunctionJob (lib, mylib) {
 
 }
 module.exports = createQuestion2PredefinedFunctionJob;
-},{}],19:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 function createSimpleInputQuestion2FunctionJob (lib, mylib) {
   'use strict';
 
@@ -1997,7 +2080,7 @@ function createSimpleInputQuestion2FunctionJob (lib, mylib) {
 
 }
 module.exports = createSimpleInputQuestion2FunctionJob;
-},{}],20:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 function createMarkups (execlib) {
   'use strict';
   var lib = execlib.lib,
@@ -2014,7 +2097,7 @@ function createMarkups (execlib) {
   return mylib;
 }
 module.exports = createMarkups;
-},{"./modal":21,"./question":22,"./toasts":23}],21:[function(require,module,exports){
+},{"./modal":23,"./question":24,"./toasts":25}],23:[function(require,module,exports){
 function createModalMarkups(lib, o, m, mylib) {
   'use strict';
 
@@ -2075,7 +2158,7 @@ function createModalMarkups(lib, o, m, mylib) {
   mylib.modalMarkup = modalMarkup;
 }
 module.exports = createModalMarkups;
-},{}],22:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 function createQuestionMarkups (lib, o, m, mylib) {
   'use strict';
 
@@ -2123,7 +2206,7 @@ function createQuestionMarkups (lib, o, m, mylib) {
   mylib.questionButtonsCreator = questionButtonsCreator;
 }
 module.exports = createQuestionMarkups;
-},{}],23:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 function createToastsMarkup (lib, o, m, s, mylib) {
   'use strict';
 
@@ -2222,7 +2305,7 @@ function createToastsMarkup (lib, o, m, s, mylib) {
   mylib.toastsSubContainer = toastsSubContainer;
 }
 module.exports = createToastsMarkup;
-},{}],24:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 function createMixins (execlib) {
   var mylib = {};
 
@@ -2232,7 +2315,7 @@ function createMixins (execlib) {
   return mylib;
 }
 module.exports = createMixins;
-},{"./resurrectablecreator":25,"./tooltipablecreator":26}],25:[function(require,module,exports){
+},{"./resurrectablecreator":27,"./tooltipablecreator":28}],27:[function(require,module,exports){
 function createResurrectableMixin (execlib, mylib) {
   'use strict';
 
@@ -2280,7 +2363,7 @@ function createResurrectableMixin (execlib, mylib) {
   mylib.Resurrectable = ResurrectableMixin;
 }
 module.exports = createResurrectableMixin;
-},{}],26:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 function createTooltipableMixin (execlib, mylib) {
   'use strict';
 
@@ -2331,4 +2414,4 @@ function createTooltipableMixin (execlib, mylib) {
   mylib.Tooltipable = TooltipableMixin;
 }
 module.exports = createTooltipableMixin;
-},{}]},{},[12]);
+},{}]},{},[14]);
