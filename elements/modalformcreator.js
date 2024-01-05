@@ -16,6 +16,15 @@ function createModalFormElement (execlib, applib) {
     FormMixin.prototype.destroy.call(this);
     BSModalDivElement.prototype.__cleanUp.call(this);
   };
+  BSModalFormElement.prototype.actualEnvironmentDescriptor = function (myname) {
+    return lib.extendWithConcat(
+      BSModalDivElement.prototype.actualEnvironmentDescriptor.call(this, myname)||{}, 
+      FormMixin.prototype.actualEnvironmentDescriptor.call(this, myname)||{}, 
+      {
+      }
+    );
+  };
+
 
   applib.registerElementType('BSModalFormElement', BSModalFormElement);
 }

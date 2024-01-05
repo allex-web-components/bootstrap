@@ -58,7 +58,6 @@ function createCustomSelectField (lib, lR, applib) {
     if (!this.get('required')) {
       return true;
     }
-    console.log('koj moj je val?', val);
     return lib.isVal(val);
   };
   CustomSelectFieldElement.prototype.actualEnvironmentDescriptor = function (myname) {
