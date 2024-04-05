@@ -489,7 +489,7 @@ function createCustomSelect (execlib, applib, mylib) {
   function valueFromColonSplits (optiondata, splits) {
     var val = optiondata[splits[0]];
     if (splits.length<2) {
-      return val+'';
+      return lib.isVal(val) ? val+'' : val;
     }
     val = modify(val, splits[1], 'pre');
     val = modify(val, splits[1], 'post');
